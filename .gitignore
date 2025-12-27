@@ -1,0 +1,16 @@
+bin/
+obj/
+
+#totaly not sensitive
+appsettings.Development.json
+appsettings.json
+
+#asset folders
+
+etfs/
+fxs/
+stocks/
+
+*.user
+
+.vs/
