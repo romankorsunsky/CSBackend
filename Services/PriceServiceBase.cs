@@ -43,7 +43,7 @@ namespace b1.Services
 
         //one important aspect of Initialize is setting the initial value of asset prices in the PriceContext
         //it is also making sure AssetToEOD containts initial EOD values.
-        protected internal async Task Initialize(List<string> assetNames)
+        protected internal void Initialize(List<string> assetNames)
         {
             Func<IValueGenerator> maker = GetGeneratorCreator(); //lambda that creates a price generator object
             ValueGeneratorFactory.RegisterGenerator(AssetType, maker); //register that lambda with the asset type
@@ -54,7 +54,7 @@ namespace b1.Services
             {
 
                 AssetEOD? eodLast = null!;
-                eodLast = await GetLastEOD(s);
+                eodLast = GetLastEOD(s);
                 var added = false;
                 if (eodLast != null && pc != null)
                 {
@@ -70,19 +70,20 @@ namespace b1.Services
                     throw new Exception("Failed to add EOD" + s);
                 }
             }
+            Console.WriteLine("FINISHED INITIALIZE FOR " + AssetType);
         }
 
         abstract internal protected void ConfigureGenerators(string s, AssetEOD eod);
 
 
-        protected internal async Task<AssetEOD> GetLastEOD(string name)
+        protected internal AssetEOD GetLastEOD(string name)
         {
             var eodCol = Db.GetCollection<AssetEOD>(IProcessAsset.ASSET_EOD_COL);
             var filter = Builders<AssetEOD>.Filter.Eq(s => s.Symbol, name);
-            var latest = await eodCol.Find(filter).
+            var latest = eodCol.Find(filter).
                     Sort(Builders<AssetEOD>.Sort.Descending(s => s.Date)).
                     Limit(1).
-                    FirstOrDefaultAsync();
+                    FirstOrDefault();
             if (latest != null)
                 return latest;
             throw new ArgumentNullException("Couldn't find EOD data for asset: " + name);
@@ -95,12 +96,10 @@ namespace b1.Services
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {   
-            await Task.Yield();
-
             var col = Db.GetCollection<TickerData>("tickers");
             var filter = Builders<TickerData>.Filter.Eq(ticker => ticker.TickerType, AssetType);
-            var assetList = await col.Find(filter).Project(ticker => ticker.Symbol).ToListAsync();
-            await Initialize(assetList);
+            var assetList = col.Find(filter).Project(ticker => ticker.Symbol).ToList();
+            Initialize(assetList);
             var _rft = new Dictionary<string, bool>();
             var _priceContext = _ctxHolder.GetContext(AssetType);
             foreach (var name in assetList)
@@ -158,7 +157,7 @@ namespace b1.Services
                             open = currentEod.Open;
                             close = currentEod.Close;
                             var price = open + (close - open) * (((x) / (double)MAX_INTERVAL) + normal.Sample() * x * ((double)MAX_INTERVAL - x) / Math.Pow(MAX_INTERVAL / 2.0, 2));
-                            _priceContext.PutPrice(name, new TimedPrice(price, dateNow));
+                            _priceContext?.PutPrice(name, new TimedPrice(price, dateNow));
                         }
                     }
                     catch (Exception e)
@@ -167,11 +166,9 @@ namespace b1.Services
                     }
 
                 }
-                _priceContext.GetSnapShot();
                 x++;
                 sw.Stop();
                 TimeSpan ts = sw.Elapsed;
-                Console.WriteLine($"Time to generate prices : {ts.Milliseconds} ms \n X = {x}");
                 await Task.Delay(TimeSpan.FromSeconds(10)); // <- when making IHostedService add System.Timers.Timer insteadof Task.Delay
             }
         }

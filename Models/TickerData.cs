@@ -25,7 +25,7 @@ namespace b1.Models
         [BsonElement("oneday")]
         public IList<TimedPrice> LastDayPrices { get; set; } = null!;
 
-        [BsonElement("oneweek")]
+        [BsonElement("twoweek")]
         public IList<TimedPrice> LastTwoWeekPrices { get; set; } = null!;
 
         [BsonElement("twomonth")]

@@ -109,6 +109,6 @@ except Exception as e:
 stocknames2 = ["AAPL"]
 etfnames2 = ["SPY"]
 currencies2 = ["EURUSD=X"]
-setupETFs(etfnames2,etfpath)
-setupStocks(stocknames2,stockpath)
-setupFX(currencies2,fxpath)
+setupETFs(etfnames,etfpath)
+setupStocks(stocknames,stockpath)
+setupFX(currencies,fxpath)

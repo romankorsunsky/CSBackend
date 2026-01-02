@@ -12,7 +12,10 @@ namespace b1.Services
         {
             _contextMap = new ConcurrentDictionary<string, PriceContext>();
         }
-
+        internal ICollection<PriceContext> GetAllContexts()
+        {
+            return _contextMap.Values;
+        }
         internal PriceContext? GetContext(string assetType)
         {
             if (_contextMap.TryGetValue(assetType, out var res))

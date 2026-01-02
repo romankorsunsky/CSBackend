@@ -5,6 +5,7 @@ obj/
 appsettings.Development.json
 appsettings.json
 
+
 #asset folders
 
 etfs/
@@ -12,5 +13,5 @@ fxs/
 stocks/
 
 *.user
-
+**/.DS_Store
 .vs/

@@ -9,7 +9,7 @@ namespace b1.Main
     public class ProcessStockCSV : IProcessAsset
     {
         private readonly IMongoDatabase _db;
-        private readonly string TICKER_COL_NAME = "tickers";
+        const string TICKER_COL_NAME = "tickers";
         public string AssetTypeName { get; } = "stock";
         public ProcessStockCSV(IMongoDatabase dbInstance)
         {

@@ -52,7 +52,40 @@ builder.Services.AddSingleton<StockPriceService>(sp =>
         throw new ArgumentNullException("PriceCcontextHolder OR Database instance didn't initialize properly");
     }
 });
+builder.Services.AddSingleton<EtfPriceService>(sp =>
+{
+    var db = sp.GetService<IMongoDatabase>();
+    var ctx = sp.GetService<PriceContextHolder>();
+    if (ctx != null && db != null)
+        return new EtfPriceService(ctx, db);
+    else
+    {
+        throw new ArgumentNullException("PriceCcontextHolder OR Database instance didn't initialize properly");
+    }
+});
+builder.Services.AddSingleton<FxPriceService>(sp =>
+{
+    var db = sp.GetService<IMongoDatabase>();
+    var ctx = sp.GetService<PriceContextHolder>();
+    if (ctx != null && db != null)
+        return new FxPriceService(ctx, db);
+    else
+    {
+        throw new ArgumentNullException("PriceCcontextHolder OR Database instance didn't initialize properly");
+    }
+});
 
+builder.Services.AddSingleton<PriceHistoryManager>(sp =>
+{
+    var db = sp.GetService<IMongoDatabase>();
+    var ctx = sp.GetService<PriceContextHolder>();
+    if (ctx != null && db != null)
+        return new PriceHistoryManager(ctx, db);
+    else
+    {
+        throw new ArgumentNullException("PriceCcontextHolder OR Database instance didn't initialize properly");
+    }
+});
 
 builder.Services.AddScoped<UserRegService>(sp =>
 {
@@ -60,7 +93,13 @@ builder.Services.AddScoped<UserRegService>(sp =>
     return new UserRegService(db);
 });
 
+
 builder.Services.AddHostedService<StockPriceService>();
+builder.Services.AddHostedService<EtfPriceService>();
+builder.Services.AddHostedService<FxPriceService>();
+
+builder.Services.AddHostedService<PriceHistoryManager>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -70,6 +109,7 @@ if (app.Environment.IsDevelopment())
 
 //app.UseHttpsRedirection();
 app.MapControllers();
+
 using (var scp = app.Services.CreateScope())
 {
     var preProcessor = scp.ServiceProvider.GetService<PreProcessor>();

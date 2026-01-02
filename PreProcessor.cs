@@ -66,9 +66,8 @@ namespace b1.Main
                 }
             }
 
-            await ProcessAssets(new List<string>() { "AAPL", "SPY","EURUSD=X"});
+            await ProcessAssets(stockNames);
             //ProcessType(stockNames); //<- obviously later change "AAPL" to stockNames List<string>
-            
         }
         public void RegisterProcessor(string name, IProcessAsset processor)
         {   
@@ -78,10 +77,6 @@ namespace b1.Main
             } 
         }
         
-        
-        //For example : process "stocks", will process the csv's in the stock folder and so on.
-        //So the arg is essentially the name of a folder which has to match the type of the asset.
-        //If there is no processor for the type, we do nothing.
         public async Task ProcessAssets(List<string> assetNames)
         { 
             foreach (var asset in assetNames)
