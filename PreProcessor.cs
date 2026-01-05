@@ -8,25 +8,28 @@ namespace b1.Main
     public class PreProcessor
     {
         const string TICKER_COL_NAME = "tickers";
-        private readonly Dictionary<string, IProcessAsset> _assetProcessors =
-            new Dictionary<string, IProcessAsset>();
+        private readonly Dictionary<string, ProcessAssetBase> _assetProcessors =
+            new Dictionary<string, ProcessAssetBase>();
         private IMongoDatabase Db { get; init; } 
         public PreProcessor(IMongoDatabase dbInstance)
         {
             Db = dbInstance;
-            Db.CreateCollection(IProcessAsset.ASSET_EOD_COL);
-            //this is bad cuz it's hardcoded
-            Db.CreateCollection(TICKER_COL_NAME); // <- should be injected usin the DI container.
+            Db.CreateCollection(ProcessAssetBase.ASSET_EOD_COL);
+            Db.CreateCollection(TICKER_COL_NAME);
         }
         public async Task Run()
         {
-            var col = Db.GetCollection<AssetEOD>(IProcessAsset.ASSET_EOD_COL);
+            var col = Db.GetCollection<AssetEOD>(ProcessAssetBase.ASSET_EOD_COL);
             var indexKeys = Builders<AssetEOD>.IndexKeys.
                 Ascending(asset => asset.Symbol).
                 Ascending(asset => asset.Date);
             var index = new CreateIndexModel<AssetEOD>(indexKeys);
             await col.Indexes.CreateOneAsync(index);
-
+            Db.CreateCollection(ProcessAssetBase.CHART_HIS_COL);
+            var indexKey = Builders<ChartData>.IndexKeys.Ascending(chrt => chrt.Symbol);
+            var chartIndex = new CreateIndexModel<ChartData>(indexKey);
+            var chartCol = Db.GetCollection<ChartData>(ProcessAssetBase.CHART_HIS_COL);
+            await chartCol.Indexes.CreateOneAsync(chartIndex);
             List<string> etfNames = new List<string>();
             List<string> fxNames = new List<string>();
             List<string> stockNames = new List<string>();
@@ -46,7 +49,7 @@ namespace b1.Main
                 }
             }
             foreach (string s in etfPaths)
-            {   
+            {
                 var splitS = s.Split(".");
                 if (splitS[1] == "csv")
                 {
@@ -65,11 +68,13 @@ namespace b1.Main
                     RegisterProcessor(fileName.Split(".")[0], new ProcessFxCSV(Db));
                 }
             }
-
-            await ProcessAssets(stockNames);
+            var t1 = ProcessAssets(stockNames);
+            var t2 = ProcessAssets(etfNames);
+            var t3 = ProcessAssets(fxNames);
+            Task.WaitAll(t1, t2, t3);
             //ProcessType(stockNames); //<- obviously later change "AAPL" to stockNames List<string>
         }
-        public void RegisterProcessor(string name, IProcessAsset processor)
+        public void RegisterProcessor(string name, ProcessAssetBase processor)
         {   
             if (name != null && name != "" && processor != null)
             {
@@ -83,7 +88,7 @@ namespace b1.Main
             {
                 try
                 {
-                    IProcessAsset? processor = null;
+                    ProcessAssetBase? processor = null;
                     if (_assetProcessors.TryGetValue(asset, out processor))
                     {
                         await processor.Process(asset);

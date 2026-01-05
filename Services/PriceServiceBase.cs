@@ -78,7 +78,7 @@ namespace b1.Services
 
         protected internal AssetEOD GetLastEOD(string name)
         {
-            var eodCol = Db.GetCollection<AssetEOD>(IProcessAsset.ASSET_EOD_COL);
+            var eodCol = Db.GetCollection<AssetEOD>(ProcessAssetBase.ASSET_EOD_COL);
             var filter = Builders<AssetEOD>.Filter.Eq(s => s.Symbol, name);
             var latest = eodCol.Find(filter).
                     Sort(Builders<AssetEOD>.Sort.Descending(s => s.Date)).

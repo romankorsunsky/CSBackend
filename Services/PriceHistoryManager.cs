@@ -25,6 +25,7 @@ namespace b1.Services
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var tickersCol = Db.GetCollection<TickerData>("tickers");
+            var chartsCol = Db.GetCollection<ChartData>(ProcessAssetBase.CHART_HIS_COL);
             long count = 0;
             const int TWO_WEEK_TICKS = 30, TWO_MONTH_TICKS = 120, ONE_YEAR_TICKS = 600, FIVE_YEAR_TICKS = 3000;
             const int ONE_DAY_L = 120, TWO_WEEK_L = 56, TWO_MONTH_L = 60, ONE_YEAR_L = 73, FIVE_YEAR_L = 73;
@@ -34,58 +35,58 @@ namespace b1.Services
                 List<PriceContext> contexts = CtxHolder.GetAllContexts().ToList();
                 foreach (var context in contexts)
                 {
-                    var symbolNames = context.GetSymbolNames();
+                    List<string> symbolNames = context.GetSymbolNames();
                     foreach (var symbol in symbolNames)
                     {
-                        var minTD = context.GetTimedPrice(symbol); //get latest TimedPrice
-                        await tickersCol.UpdateOneAsync(
+                        var latestPrice = context.GetTimedPrice(symbol); //get latest TimedPrice
+                        await chartsCol.UpdateOneAsync(
                             t => t.Symbol == symbol,
-                            Builders<TickerData>.Update.PushEach(
+                            Builders<ChartData>.Update.PushEach(
                                 td => td.LastDayPrices,
-                                new[] { minTD },
+                                new[] { latestPrice },
                                 ONE_DAY_L
                             )
                         );
                         if (count % TWO_WEEK_TICKS == 0)
                         {
-                           await tickersCol.UpdateOneAsync(
+                           await chartsCol.UpdateOneAsync(
                                 t => t.Symbol == symbol,
-                                Builders<TickerData>.Update.PushEach(
+                                Builders<ChartData>.Update.PushEach(
                                     td => td.LastTwoWeekPrices,
-                                    new[] { minTD },
+                                    new[] { latestPrice },
                                     TWO_WEEK_L
                                 )
                             );
                         }
                         if (count % TWO_MONTH_TICKS == 0)
                         {
-                            await tickersCol.UpdateOneAsync(
+                            await chartsCol.UpdateOneAsync(
                             t => t.Symbol == symbol,
-                                Builders<TickerData>.Update.PushEach(
+                                Builders<ChartData>.Update.PushEach(
                                     td => td.LastTwoMonthPrices,
-                                    new[] { minTD },
+                                    new[] { latestPrice },
                                     TWO_MONTH_L
                                 )
                             );
                         }
                         if (count % ONE_YEAR_TICKS == 0)
                         {
-                            await tickersCol.UpdateOneAsync(
+                            await chartsCol.UpdateOneAsync(
                             t => t.Symbol == symbol,
-                                Builders<TickerData>.Update.PushEach(
+                                Builders<ChartData>.Update.PushEach(
                                     td => td.LastYearPrices,
-                                    new[] { minTD },
+                                    new[] { latestPrice },
                                     ONE_YEAR_L
                                 )
                             );
                         }
                         if (count % FIVE_YEAR_TICKS == 0)
                         {
-                            await tickersCol.UpdateOneAsync(
+                            await chartsCol.UpdateOneAsync(
                             t => t.Symbol == symbol,
-                            Builders<TickerData>.Update.PushEach(
+                            Builders<ChartData>.Update.PushEach(
                                 td => td.LastFiveYearPrices,
-                                new[] { minTD },
+                                new[] { latestPrice },
                                 FIVE_YEAR_L
                             )
                         );

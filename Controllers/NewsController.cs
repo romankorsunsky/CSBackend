@@ -6,9 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace b1.Controllers
 {
     [ApiController]
-    [Route("api/v1/home")]
+    [Route("api/v1/news")]
     [Produces("application/json")]
-    public class HomeController : ControllerBase
+    public class NewsController : ControllerBase
     {
         private static IList<string> ArticleNames { get; } = new List<string>()
         {

@@ -22,13 +22,13 @@ namespace b1.Main
             if (symbol != null && tp.Price >= 0)
                 PricesForSymbol.AddOrUpdate(symbol, tp, (symbol, prev) => tp);
         }
-        public TimedPrice GetTimedPrice(string symbol)
+        public TimedPrice? GetTimedPrice(string symbol)
         {
             if (PricesForSymbol.TryGetValue(symbol,out var val))
             {
                 return val;
             }
-            throw new ArgumentException("Bad Symbol");
+            return null;
         }
         public string GetAssetType()
         {

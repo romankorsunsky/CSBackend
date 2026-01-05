@@ -41,7 +41,7 @@ namespace sadna.Services
                 var high = Math.Max(Math.Max(n1, n2), Math.Max(open, close));
                 var low = Math.Min(Math.Min(n1, n2), Math.Min(open, close));
                 ForexEOD res = new ForexEOD(name, newDate, open, high, close, low);
-                var col = Db.GetCollection<AssetEOD>(IProcessAsset.ASSET_EOD_COL);
+                var col = Db.GetCollection<AssetEOD>(ProcessAssetBase.ASSET_EOD_COL);
                 await col.InsertOneAsync(res);
                 return res;
             }

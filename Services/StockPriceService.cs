@@ -54,7 +54,7 @@ namespace sadna.Services
                 var low = Math.Min(Math.Min(n1, n2), Math.Min(open, close));
                 var volume = _volumeGenerators[name].GetValue(typedEod.Volume);
                 StockEOD res = new StockEOD(name, newDate, open, high, close, low, volume, 0.0, 0.0);
-                var col = Db.GetCollection<AssetEOD>(IProcessAsset.ASSET_EOD_COL);
+                var col = Db.GetCollection<AssetEOD>(ProcessAssetBase.ASSET_EOD_COL);
                 await col.InsertOneAsync(res);
                 return res;
             }
