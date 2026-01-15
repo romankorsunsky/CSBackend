@@ -65,6 +65,22 @@ namespace b1.Controllers
             }
             return NotFound();
         }
+
+        [HttpGet]
+        [Route("{symbol}/history")]
+        public ActionResult<ChartData> GetChartData([FromRoute] string symbol)
+        {
+            ChartData chData = null!;
+            var col = _db.GetCollection<ChartData>(ProcessAssetBase.CHART_HIS_COL);
+            var results = col.Find(ch => ch.Symbol == symbol);
+            chData = results.FirstOrDefault();
+            if (chData == null)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, null);
+            }
+            return Ok(chData);
+        }
+
         [HttpGet]
         [Route("{symbol}/price")]
         public ActionResult<TimedPrice> GetSymbolPrice([FromRoute] string symbol)
@@ -94,7 +110,7 @@ namespace b1.Controllers
 
             var tickers = await col.FindAsync(filter);
             tickerData = await tickers.ToListAsync();
-            return tickerData;
+            return Ok(tickerData);
         }
         
     }

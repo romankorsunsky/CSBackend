@@ -71,7 +71,7 @@ namespace b1.Main
             var t1 = ProcessAssets(stockNames);
             var t2 = ProcessAssets(etfNames);
             var t3 = ProcessAssets(fxNames);
-            Task.WaitAll(t1, t2, t3);
+            await Task.WhenAll(t1, t2, t3);
             //ProcessType(stockNames); //<- obviously later change "AAPL" to stockNames List<string>
         }
         public void RegisterProcessor(string name, ProcessAssetBase processor)

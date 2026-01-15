@@ -109,7 +109,6 @@ namespace b1.Main
                         PopulateChartHist(eod, ref fy, ref oy);
                         eodList.Add(eod);
                     }
-                    Console.WriteLine($"IT HAS {eodList.Count}");
                     chartData.LastTwoWeekPrices = TwList;
                     chartData.LastTwoMonthPrices = TmList;
                     chartData.LastYearPrices = OyList;
@@ -126,9 +125,7 @@ namespace b1.Main
                     {
                         Console.WriteLine(e.Message);
                     }
-                    Console.WriteLine("PROCESSED: " + assetName);
                 }
-
             }
         }
     }

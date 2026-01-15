@@ -1,50 +1,40 @@
-
+using BC = BCrypt.Net.BCrypt;
 namespace b1.Models
 {
-   public class UserRegistrationForm
+    public class UserRegistrationForm
     {
-        private string _email;
-        private string _firstName;
-        private string _lastName;
+        public string Username { get; init; }
+        public string FirstName { get; init; }
 
-        private string _password;
-        public UserRegistrationForm(string email,string password, string firstName, string lastName)
+        public string Email { get; init; }
+        public string LastName { get; init; }
+        public string Password { get; init; }
+        public UserRegistrationForm(string username, string email, string password, string firstName, string lastName)
         {
-            _email = email;
-            _password = password;
-            _firstName = firstName;
-            _lastName = lastName;
+            Username = username;
+            Email = email;
+            Password = password;
+            FirstName = firstName;
+            LastName = lastName;
         }
-        public string Email
+        public static User CreateUserFromRegistration(UserRegistrationForm form)
         {
-            get { return _email; }
-            init
+            return new User()
             {
-                _email = value;
-            }
+                Username = form.Username,
+                Email = form.Email,
+                Password = BC.EnhancedHashPassword(form.Password),
+                Fname = form.FirstName,
+                Lname = form.LastName
+            };
         }
-        public string Password
+        public override string ToString()
         {
-            get { return _password; }
-            init
-            {
-                _password = value;
-            }
+            return $"Username = {Username} Email = {Email} Pasword = {Password} FirstName = {FirstName}, LastName = {LastName}";
         }
-
-        public string FirstName
-        {
-            get{ return _firstName; }
-            init { _firstName = value; }
-                     
-        }
-        public string LastName
-        {
-            get { return _lastName; }
-            init
-            {
-                _lastName = value;
-            }
-        }
-    } 
+    }
 }
+
+//curl -v --json '{"Username":"RomanTheBaws","Password":"1233","Email":"korsunsky.roma@gmail.com","FirstName":"Roma","LastName":"Korsunsky"}' http://localhost:5008/api/v1/users/register
+//curl -v --json '{"Username":"RomanTheBaws","Password":"1233"}' http://localhost:5008/api/v1/users/login
+//curl -X GET http://localhost:5008/api/v1/portfolio/Boris -H "Authorization: Bearer AUTH_CODE_HERE"

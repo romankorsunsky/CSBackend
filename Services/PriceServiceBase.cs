@@ -70,7 +70,6 @@ namespace b1.Services
                     throw new Exception("Failed to add EOD" + s);
                 }
             }
-            Console.WriteLine("FINISHED INITIALIZE FOR " + AssetType);
         }
 
         abstract internal protected void ConfigureGenerators(string s, AssetEOD eod);
@@ -114,7 +113,6 @@ namespace b1.Services
                 {
                     break;
                 }
-                Stopwatch sw = Stopwatch.StartNew();
                 foreach (var name in assetList)
                 {
                     try
@@ -164,11 +162,8 @@ namespace b1.Services
                     {
                         Console.WriteLine(e.StackTrace);
                     }
-
                 }
                 x++;
-                sw.Stop();
-                TimeSpan ts = sw.Elapsed;
                 await Task.Delay(TimeSpan.FromSeconds(10)); // <- when making IHostedService add System.Timers.Timer insteadof Task.Delay
             }
         }

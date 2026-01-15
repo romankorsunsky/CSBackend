@@ -29,72 +29,42 @@ namespace b1.Services
             long count = 0;
             const int TWO_WEEK_TICKS = 30, TWO_MONTH_TICKS = 120, ONE_YEAR_TICKS = 600, FIVE_YEAR_TICKS = 3000;
             const int ONE_DAY_L = 120, TWO_WEEK_L = 56, TWO_MONTH_L = 60, ONE_YEAR_L = 73, FIVE_YEAR_L = 73;
+            List<string> symbolNames = null!;
+
             for (; ; )
             {
-                Stopwatch sw = Stopwatch.StartNew();
                 List<PriceContext> contexts = CtxHolder.GetAllContexts().ToList();
-                foreach (var context in contexts)
+                TimedPrice? latestPrice = null!;
+                foreach (var context in contexts) //for each PriceContext
                 {
-                    List<string> symbolNames = context.GetSymbolNames();
+
+                    symbolNames = context.GetSymbolNames();
                     foreach (var symbol in symbolNames)
                     {
-                        var latestPrice = context.GetTimedPrice(symbol); //get latest TimedPrice
-                        await chartsCol.UpdateOneAsync(
-                            t => t.Symbol == symbol,
-                            Builders<ChartData>.Update.PushEach(
-                                td => td.LastDayPrices,
-                                new[] { latestPrice },
-                                ONE_DAY_L
-                            )
-                        );
+                        latestPrice = context.GetTimedPrice(symbol); //get latest TimedPrice
+                        List<UpdateDefinition<ChartData>> updates = new(4);
+                        var upd = Builders<ChartData>.Update.PushEach(ch => ch.LastDayPrices, new[] { latestPrice }, ONE_DAY_L);
+                        updates.Add(upd);
                         if (count % TWO_WEEK_TICKS == 0)
                         {
-                           await chartsCol.UpdateOneAsync(
-                                t => t.Symbol == symbol,
-                                Builders<ChartData>.Update.PushEach(
-                                    td => td.LastTwoWeekPrices,
-                                    new[] { latestPrice },
-                                    TWO_WEEK_L
-                                )
-                            );
+                        upd = Builders<ChartData>.Update.PushEach(ch => ch.LastTwoWeekPrices, new[] { latestPrice }, TWO_WEEK_L);
                         }
                         if (count % TWO_MONTH_TICKS == 0)
                         {
-                            await chartsCol.UpdateOneAsync(
-                            t => t.Symbol == symbol,
-                                Builders<ChartData>.Update.PushEach(
-                                    td => td.LastTwoMonthPrices,
-                                    new[] { latestPrice },
-                                    TWO_MONTH_L
-                                )
-                            );
+                            upd = Builders<ChartData>.Update.PushEach(ch => ch.LastTwoMonthPrices, new[] { latestPrice }, TWO_MONTH_L);
                         }
                         if (count % ONE_YEAR_TICKS == 0)
                         {
-                            await chartsCol.UpdateOneAsync(
-                            t => t.Symbol == symbol,
-                                Builders<ChartData>.Update.PushEach(
-                                    td => td.LastYearPrices,
-                                    new[] { latestPrice },
-                                    ONE_YEAR_L
-                                )
-                            );
+                            upd = Builders<ChartData>.Update.PushEach(ch => ch.LastYearPrices, new[] { latestPrice }, ONE_YEAR_L);
                         }
                         if (count % FIVE_YEAR_TICKS == 0)
                         {
-                            await chartsCol.UpdateOneAsync(
-                            t => t.Symbol == symbol,
-                            Builders<ChartData>.Update.PushEach(
-                                td => td.LastFiveYearPrices,
-                                new[] { latestPrice },
-                                FIVE_YEAR_L
-                            )
-                        );
+                            upd = Builders<ChartData>.Update.PushEach(ch => ch.LastFiveYearPrices, new[] { latestPrice }, FIVE_YEAR_L);
                         }
+                        var combinedUpdates = Builders<ChartData>.Update.Combine(updates);
+                        await chartsCol.UpdateOneAsync(ch => ch.Symbol == symbol, combinedUpdates);
                     }
                 }
-                sw.Stop();
-                Console.WriteLine("Time to insert all TimedPrice (microsecs):" + sw.Elapsed.Microseconds);
                 await Task.Delay(TimeSpan.FromSeconds(12));
                 count++;
             }

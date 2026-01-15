@@ -114,9 +114,7 @@ namespace b1.Main
                     {
                         Console.WriteLine(e.Message);
                     }
-                    Console.WriteLine("PROCESSED: " + assetName);
                 }
-
             }
         }
     }

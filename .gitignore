@@ -15,3 +15,5 @@ stocks/
 *.user
 **/.DS_Store
 .vs/
+
+*.env
