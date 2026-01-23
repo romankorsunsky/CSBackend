@@ -40,6 +40,14 @@ builder.Services.AddAuthentication(opts =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
             builder.Configuration["JwtSettings:Key"]!)),
     };
+    jwtOptions.Events = new JwtBearerEvents()
+    {
+        OnTokenValidated = ctx =>
+        {
+            Console.WriteLine(ctx.SecurityToken.ToString());
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.Configure<MongoSettings>(
@@ -69,6 +77,8 @@ builder.Services.AddSingleton<IUserRepository>(sp =>
     var context = sp.GetRequiredService<IMongoDatabase>();
     return new MongoUserRepository(context);
 });
+
+builder.Services.AddSingleton<ChartsDataRepo>();
 builder.Services.AddSingleton<TokenProvider>();
 builder.Services.AddScoped<UserAuthenticator>();
 builder.Services.AddScoped<PreProcessor>();
@@ -132,7 +142,6 @@ builder.Services.AddScoped<UserService>(sp =>
     var userRepo = sp.GetRequiredService<IUserRepository>();
     return new UserService(userRepo);
 });
-
 
 builder.Services.AddHostedService<StockPriceService>();
 builder.Services.AddHostedService<EtfPriceService>();

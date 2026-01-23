@@ -26,10 +26,10 @@ namespace sadna.Services
         {
             if (!_addedMCRV)
             {
-                ValueGeneratorFactory.RegisterGenerator("mcrv", () => { return new MCRValueGenerator(); });
+                ValueGenFactory.RegisterGenerator("mcrv", () => { return new MCRValueGenerator(); });
                 _addedMCRV = true;
             }
-            var volGen = (MCRValueGenerator)ValueGeneratorFactory.GetValueGenerator("mcrv");
+            var volGen = (MCRValueGenerator)ValueGenFactory.GetValueGenerator("mcrv");
             if (eod is StockEOD)
             {
                 var typedEod = (StockEOD)eod;
@@ -42,7 +42,7 @@ namespace sadna.Services
         protected internal override async Task<AssetEOD> MakeEod(AssetEOD eod, string name)
         {
             if (eod is StockEOD)
-            {
+            { 
                 var typedEod = (StockEOD)eod;
                 var generator = AssetToEODGen[name];
                 var newDate = typedEod.Date.Date.AddDays(1); //AssetEOD has Date field, and so does a DateTime

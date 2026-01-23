@@ -22,13 +22,11 @@ namespace b1.Srevices
         public async Task<User?> CreateUser(UserRegistrationForm u)
         {
             bool valid = await isValidUser(u);
-
             if (!valid)
             {
                 return null;
             }
             var verified = UserRegistrationForm.CreateUserFromRegistration(u);
-            Console.WriteLine($"hashed from retrieved:[{verified.Password}]");
             await Users.AddNewUser(verified);
             return verified;
         }
@@ -47,7 +45,6 @@ namespace b1.Srevices
             }
 
             var usr = await Users.GetUserByName(user.Username);
-
             if (usr is not null)
                 return false;
             return true;

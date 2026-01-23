@@ -18,7 +18,7 @@ namespace b1.Authentication
             UsrService = userService;
             JTProvider = tokenProvider;
         }
-        public async Task<string> Handle(AuthRequest req)
+        public async Task<TokenTriplet> Handle(AuthRequest req)
         {
             var user = await UsrService.FindByName(req.Username);
             if (user is null)
@@ -31,12 +31,19 @@ namespace b1.Authentication
                 throw new Exception("Bad password");
             }
             var token = JTProvider.CreateToken(user);
-            return token;
+            TokenTriplet triplet = new TokenTriplet()
+            {
+                AccessToken = token,
+                IdToken = "dummy",
+                RefreshToken = "dummy"
+            };
+            Console.WriteLine("Handle issued AccessToken: " + token);
+            return triplet;
         }
     }
     public struct AuthRequest
         {
-            public string Username { get; set; }
-            public string Password { get; set; }
+            public string Username { get; init; }
+            public string Password { get; init; }
         }
 }

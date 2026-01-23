@@ -1,5 +1,4 @@
 
-using b1.DTO;
 using b1.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,12 +16,6 @@ namespace b1.Controllers
         //here we will add a news service I will decide if it will be read from regular files or 
         //I will hafve to make a collection or something we will see.
         
-        
-
-        public IList<ArticleDTO> GetArticleFeed()
-        {
-            return null;
-        } 
     }
 
     

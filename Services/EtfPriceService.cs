@@ -49,10 +49,10 @@ namespace b1.Services
         {
             if (!_addedMCRV)
             {
-                ValueGeneratorFactory.RegisterGenerator("mcrv", () => { return new MCRValueGenerator(); });
+                ValueGenFactory.RegisterGenerator("mcrv", () => { return new MCRValueGenerator(); });
                 _addedMCRV = true;
             }
-            var volGen = (MCRValueGenerator)ValueGeneratorFactory.GetValueGenerator("mcrv");
+            var volGen = (MCRValueGenerator)ValueGenFactory.GetValueGenerator("mcrv");
             if (eod is EtfEOD)
             {
                 var typedEod = (EtfEOD)eod;

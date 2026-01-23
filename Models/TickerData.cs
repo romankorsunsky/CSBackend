@@ -10,16 +10,12 @@ namespace b1.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public ObjectId Id;
 
-        [BsonElement("symbol")]
         public string Symbol { get; set; } = null!;
 
-        [BsonElement("longName")]
         public string LongName { get; set; } = null!;
 
-        [BsonElement("description")]
         public string Description { get; set; } = null!;
 
-        [BsonElement("type")]
         public string TickerType { get; set; } = null!;
 
 

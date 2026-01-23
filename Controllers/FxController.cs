@@ -1,11 +1,10 @@
 
-
-using b1.DataTransferObjects;
 using b1.Main;
 using b1.Models;
 using b1.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace b1.Controllers
@@ -15,7 +14,7 @@ namespace b1.Controllers
     [Produces("application/json")]
     public class FxController : ControllerBase
     {
-        private PriceContext? _ctx;
+        private PriceContext? Ctx { get; set; }
 
         private PriceContextHolder _ctxHolder { get; init; }
         private IMongoDatabase _db { get; init; }
@@ -25,7 +24,7 @@ namespace b1.Controllers
         {
             _db = dbInstance;
             _ctxHolder = ctxHolder;
-            _ctx = _ctxHolder.GetContext(AssetTypeName);
+            Ctx = _ctxHolder.GetContext(AssetTypeName);
         }
 
         [HttpGet]
@@ -35,22 +34,19 @@ namespace b1.Controllers
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
         public ActionResult<IList<string>> GetTickerNames()
         {
-            //another option here is to use TaskCompletionSource<bool> and signal from the PriceService that we can run
-            //but I'm not sure abt the mechanics of what the HTTP request component does when all the pent up requests will 
-            //suddenly continue executing here, what if there are hundreds of thousands, rather return 503 for now.
-            if (_ctx == null)
+            if (Ctx == null)
             {
-                _ctx = _ctxHolder.GetContext(AssetTypeName);
+                Ctx = _ctxHolder.GetContext(AssetTypeName);
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, null);
             }
-            var tickerNames = _ctx.GetSymbolNames();
+            var tickerNames = Ctx.GetSymbolNames();
             tickerNames.Sort();
             return Ok(tickerNames);
         }
 
         [HttpGet]
         [Route("{symbol}")]
-        public async Task<ActionResult<TickerData>> GetTicker(string symbol)
+        public async Task<ActionResult<TickerData>> GetTicker([FromRoute] string symbol)
         {
             if (symbol == null || symbol == "")
             {
@@ -68,12 +64,12 @@ namespace b1.Controllers
 
         [HttpGet]
         [Route("{symbol}/history")]
-        public ActionResult<ChartData> GetChartData([FromRoute] string symbol)
+        public async Task<ActionResult<ChartData>> GetChartData([FromRoute] string symbol)
         {
             ChartData chData = null!;
             var col = _db.GetCollection<ChartData>(ProcessAssetBase.CHART_HIS_COL);
-            var results = col.Find(ch => ch.Symbol == symbol);
-            chData = results.FirstOrDefault();
+            var results = await col.FindAsync(ch => ch.Symbol == symbol);
+            chData = await results.FirstOrDefaultAsync();
             if (chData == null)
             {
                 return StatusCode(StatusCodes.Status404NotFound, null);
@@ -85,11 +81,11 @@ namespace b1.Controllers
         [Route("{symbol}/price")]
         public ActionResult<TimedPrice> GetSymbolPrice([FromRoute] string symbol)
         {
-            if (_ctx == null)
+            if (Ctx == null)
             {
-                return StatusCode(StatusCodes.Status503ServiceUnavailable, null);
+                return StatusCode(StatusCodes.Status503ServiceUnavailable);
             }
-            var res = _ctx.GetTimedPrice(symbol);
+            var res = Ctx.GetTimedPrice(symbol);
             if (res == null)
             {
                 return NotFound();

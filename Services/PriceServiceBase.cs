@@ -20,17 +20,19 @@ namespace b1.Services
         private PriceContextHolder _ctxHolder { get; init; }
         private PriceContext? _pc { get; set; } = null!;
         protected internal IMongoDatabase Db { get; init; }
-        protected internal ValueGeneratorFactory ValueGeneratorFactory { get; init; }
+        static protected internal ValueGeneratorFactory ValueGenFactory { get;}
         protected internal Dictionary<string, IValueGenerator> AssetToEODGen { get; init; }
         protected internal Dictionary<string, AssetEOD> AssetToEOD { get; init; }
         protected internal Dictionary<string, AssetEOD> AssetToTmrwEOD { get; init; }
-
         public abstract string AssetType { get; init; }
-        protected PriceServiceBase(PriceContextHolder holder, IMongoDatabase dbInstance):base()
-        {   
+        static PriceServiceBase()
+        {
+            ValueGenFactory = new ValueGeneratorFactory();
+        }
+        protected PriceServiceBase(PriceContextHolder holder, IMongoDatabase dbInstance) : base()
+        {
             Db = dbInstance;
             _ctxHolder = holder;
-            ValueGeneratorFactory = new ValueGeneratorFactory();
             AssetToEODGen = new Dictionary<string, IValueGenerator>();
             AssetToEOD = new Dictionary<string, AssetEOD>();
             AssetToTmrwEOD = new Dictionary<string, AssetEOD>();
@@ -43,10 +45,10 @@ namespace b1.Services
 
         //one important aspect of Initialize is setting the initial value of asset prices in the PriceContext
         //it is also making sure AssetToEOD containts initial EOD values.
-        protected internal void Initialize(List<string> assetNames)
+        protected  internal void Initialize(List<string> assetNames)
         {
             Func<IValueGenerator> maker = GetGeneratorCreator(); //lambda that creates a price generator object
-            ValueGeneratorFactory.RegisterGenerator(AssetType, maker); //register that lambda with the asset type
+            ValueGenFactory.RegisterGenerator(AssetType, maker); //register that lambda with the asset type, a recipee on how to create
             _ctxHolder.AddContext(AssetType, new PriceContext(AssetType));
             DateTime dateNow = DateTime.UtcNow;
             var pc = _ctxHolder.GetContext(AssetType);
@@ -58,6 +60,7 @@ namespace b1.Services
                 var added = false;
                 if (eodLast != null && pc != null)
                 {
+                    AssetToEODGen.Add(s, maker.Invoke());
                     added = AssetToEOD.TryAdd(s, eodLast);
                     if (added)
                     {
@@ -119,7 +122,7 @@ namespace b1.Services
                     {
                         DateTime dateNow = DateTime.UtcNow;
                         DateTime sameDayStart = DateTime.SpecifyKind(dateNow.Date, DateTimeKind.Utc);
-                        bool in1h = dateNow >= sameDayStart.AddHours(23).AddMinutes(30) &&
+                        bool in1h = dateNow >= sameDayStart.AddHours(23).AddMinutes(10) &&
                                 dateNow < sameDayStart.AddHours(24);
                         bool out1min = dateNow >= sameDayStart.AddDays(1) &&
                                 dateNow < sameDayStart.AddDays(1).AddMinutes(1);
@@ -131,7 +134,7 @@ namespace b1.Services
                             }
                             double open, close;
 
-                            if (in1h) //30 mins before midnight create EOD for next day
+                            if (in1h) //50 mins before midnight create EOD for next day
                             {
                                 if (!_rft[name])
                                 {
