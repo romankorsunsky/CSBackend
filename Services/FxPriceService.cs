@@ -15,18 +15,26 @@ namespace sadna.Services
         }
         public FxPriceService(PriceContextHolder ctx,IMongoDatabase dbInstance) : base(ctx,dbInstance) {}
 
-        protected internal override void ConfigureGenerators(string assetName, AssetEOD eod)
+        protected internal override void ConfigureGenerators(Dictionary<string,AssetEOD> assetsMap)
         {
-            if (AssetToEODGen.TryGetValue(assetName, out var generator))
+            var names = assetsMap.Keys.ToList();
+            
+            foreach (var name in names)
             {
-                if (generator is MCRValueGenerator)
+                if (assetsMap.TryGetValue(name, out var eod))
                 {
-                    MCRValueGenerator wellTypedGen = (MCRValueGenerator)generator;
-                    wellTypedGen.WithMean(eod.Open);
+                    if (AssetToEODGen.TryGetValue(name, out var generator))
+                    {
+                        if (generator is MCRValueGenerator)
+                        {
+                            MCRValueGenerator wellTypedGen = (MCRValueGenerator)generator;
+                            wellTypedGen.WithMean(eod.Open);
+                        }
+                    }
                 }
+
             }
         }
-
         protected internal override async Task<AssetEOD> MakeEod(AssetEOD eod,string name)
         {
             if (eod is ForexEOD)

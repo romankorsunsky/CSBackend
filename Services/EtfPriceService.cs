@@ -45,20 +45,26 @@ namespace b1.Services
             }
         }
 
-        protected internal override void ConfigureGenerators(string name, AssetEOD eod)
+        protected internal override void ConfigureGenerators(Dictionary<string,AssetEOD> assetsMap)
         {
+            var names = assetsMap.Keys.ToList();
             if (!_addedMCRV)
             {
                 ValueGenFactory.RegisterGenerator("mcrv", () => { return new MCRValueGenerator(); });
                 _addedMCRV = true;
             }
-            var volGen = (MCRValueGenerator)ValueGenFactory.GetValueGenerator("mcrv");
-            if (eod is EtfEOD)
+            var temp = ValueGenFactory.GetValueGenerator("mcrv");
+            var volGen = (temp != null) ? (MCRValueGenerator)temp : null;
+            foreach (var name in names)
             {
-                var typedEod = (EtfEOD)eod;
-                volGen.WithMean(typedEod.Volume).WithSigma(volGen.Sigma * volGen.Mean);
-                if (!_volumeGenerators.TryAdd(name, volGen))
-                    throw new Exception("Couldn't add VolumeGenerator for:" + name);
+                if (assetsMap.TryGetValue(name, out var eod))
+                {
+                    var typedEod = (EtfEOD)eod;
+                    volGen.WithMean(typedEod.Volume).WithSigma(volGen.Sigma * volGen.Mean);
+                    if (!_volumeGenerators.TryAdd(name, volGen))
+                        throw new Exception("Couldn't add VolumeGenerator for:" + name);
+                }
+
             }
         }
     }

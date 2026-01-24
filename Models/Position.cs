@@ -5,6 +5,9 @@ namespace b1.Models
 {
     public sealed class Position
     {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id;
         [BsonElement]
         public string AssetSymbol { get; init; } = null!;
 
@@ -24,10 +27,11 @@ namespace b1.Models
         [BsonElement]
         public bool Closed { get; init; }
     }
+    public enum Direction
+    {
+        LONG,
+        SHORT
+    }
 }
 
-public enum Direction
-{
-    LONG,
-    SHORT
-}
+

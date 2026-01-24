@@ -7,7 +7,7 @@ namespace b1.Main
 {
     public class GBMValueGenerator: IValueGenerator
     {
-        //those(these ?) two arrays are just numbers that make sense for paremeters in the context of Geometric Brownian Motion formual
+        //those(these ?) two arrays are just numbers that make sense for paremeters in the context of Geometric Brownian Motion formula
         private readonly double[] _muSource = { 0.0140, 0.0145, 0.0150, 0.01550, 0.0160, 0.01650, 0.0170, 0.0175, 0.0180, 0.0185 };
         private readonly double[] _sigmaSource = { 0.140, 0.145, 0.150, 0.1550, 0.160, 0.1650, 0.170, 0.175, 0.180, 0.185 };
 

@@ -88,9 +88,10 @@ builder.Services.AddScoped<PreProcessor>();
 //if we do go for Redis, we could start thinking of what we can cache, maybe price histories for most popular stocks etc.
 builder.Services.AddSingleton<PriceContextHolder>(sp =>
 {
-    return new PriceContextHolder();
+    return PriceContextHolder.GetInstance();
 });
 
+//initialize services responsible for price generation
 builder.Services.AddSingleton<StockPriceService>(sp =>
 {
     var db = sp.GetService<IMongoDatabase>();
@@ -124,7 +125,7 @@ builder.Services.AddSingleton<FxPriceService>(sp =>
         throw new ArgumentNullException("PriceCcontextHolder OR Database instance didn't initialize properly");
     }
 });
-
+// services responsible for putting the prices in their respective historical location
 builder.Services.AddSingleton<PriceHistoryManager>(sp =>
 {
     var db = sp.GetService<IMongoDatabase>();
@@ -167,6 +168,7 @@ if (app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+//properly start the PreProcessor
 using (var scp = app.Services.CreateScope())
 {
     var preProcessor = scp.ServiceProvider.GetService<PreProcessor>();

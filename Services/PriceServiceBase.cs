@@ -17,8 +17,7 @@ namespace b1.Services
     public abstract class PriceServiceBase : BackgroundService
     {
         const int MAX_INTERVAL = 8640;
-        private PriceContextHolder _ctxHolder { get; init; }
-        private PriceContext? _pc { get; set; } = null!;
+        protected PriceContextHolder CtxHolder { get; init; }
         protected internal IMongoDatabase Db { get; init; }
         static protected internal ValueGeneratorFactory ValueGenFactory { get;}
         protected internal Dictionary<string, IValueGenerator> AssetToEODGen { get; init; }
@@ -27,12 +26,12 @@ namespace b1.Services
         public abstract string AssetType { get; init; }
         static PriceServiceBase()
         {
-            ValueGenFactory = new ValueGeneratorFactory();
+            ValueGenFactory = ValueGeneratorFactory.GetInstance();
         }
         protected PriceServiceBase(PriceContextHolder holder, IMongoDatabase dbInstance) : base()
         {
             Db = dbInstance;
-            _ctxHolder = holder;
+            CtxHolder = holder;
             AssetToEODGen = new Dictionary<string, IValueGenerator>();
             AssetToEOD = new Dictionary<string, AssetEOD>();
             AssetToTmrwEOD = new Dictionary<string, AssetEOD>();
@@ -45,27 +44,27 @@ namespace b1.Services
 
         //one important aspect of Initialize is setting the initial value of asset prices in the PriceContext
         //it is also making sure AssetToEOD containts initial EOD values.
-        protected  internal void Initialize(List<string> assetNames)
+        protected internal void Initialize(List<string> assetNames)
         {
-            Func<IValueGenerator> maker = GetGeneratorCreator(); //lambda that creates a price generator object
-            ValueGenFactory.RegisterGenerator(AssetType, maker); //register that lambda with the asset type, a recipee on how to create
-            _ctxHolder.AddContext(AssetType, new PriceContext(AssetType));
+            Func<IValueGenerator> maker = GetGeneratorCreator(); //how to create ValueGenerator for subclasses
+            ValueGenFactory.RegisterGenerator(AssetType, maker);
+            CtxHolder.AddContext(AssetType, new PriceContext(AssetType));
             DateTime dateNow = DateTime.UtcNow;
-            var pc = _ctxHolder.GetContext(AssetType);
+            var priceCtx = CtxHolder.GetContext(AssetType);
+            Dictionary<string, AssetEOD> assets = new();
             foreach (var s in assetNames)
             {
-
-                AssetEOD? eodLast = null!;
+                AssetEOD? eodLast;
                 eodLast = GetLastEOD(s);
                 var added = false;
-                if (eodLast != null && pc != null)
+                if (eodLast != null && priceCtx != null)
                 {
                     AssetToEODGen.Add(s, maker.Invoke());
                     added = AssetToEOD.TryAdd(s, eodLast);
                     if (added)
                     {
-                        pc.PutPrice(s, new TimedPrice(eodLast.Close, dateNow));
-                        ConfigureGenerators(s, eodLast);
+                        priceCtx.PutPrice(s, new TimedPrice(eodLast.Close, dateNow));
+
                     }
                 }
                 else
@@ -73,10 +72,10 @@ namespace b1.Services
                     throw new Exception("Failed to add EOD" + s);
                 }
             }
+            ConfigureGenerators(assets);
         }
 
-        abstract internal protected void ConfigureGenerators(string s, AssetEOD eod);
-
+        abstract internal protected void ConfigureGenerators(Dictionary<string,AssetEOD> assetsMap);
 
         protected internal AssetEOD GetLastEOD(string name)
         {
@@ -90,20 +89,14 @@ namespace b1.Services
                 return latest;
             throw new ArgumentNullException("Couldn't find EOD data for asset: " + name);
         }
-
-
-        protected internal PriceContext? GetPriceContext()
-        {
-            return _ctxHolder.GetContext(AssetType);
-        }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {   
             var col = Db.GetCollection<TickerData>("tickers");
             var filter = Builders<TickerData>.Filter.Eq(ticker => ticker.TickerType, AssetType);
             var assetList = col.Find(filter).Project(ticker => ticker.Symbol).ToList();
             Initialize(assetList);
-            var _rft = new Dictionary<string, bool>();
-            var _priceContext = _ctxHolder.GetContext(AssetType);
+            var _rft = new Dictionary<string, bool>(); // ready_for_tomorrow <- indicates if we can put tomorrows EOD
+            var _priceContext = CtxHolder.GetContext(AssetType);
             foreach (var name in assetList)
             {
                 _rft.Add(name, false);
@@ -167,7 +160,7 @@ namespace b1.Services
                     }
                 }
                 x++;
-                await Task.Delay(TimeSpan.FromSeconds(10)); // <- when making IHostedService add System.Timers.Timer insteadof Task.Delay
+                await Task.Delay(TimeSpan.FromSeconds(10));
             }
         }
         

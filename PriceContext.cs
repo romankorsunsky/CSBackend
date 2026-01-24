@@ -30,15 +30,6 @@ namespace b1.Main
             }
             return null;
         }
-        public void GetSnapShot()
-        {
-            var keys = PricesForSymbol.Keys.ToList();
-            var str = "";
-            keys.ForEach((symbol) => { str = str + "{" + symbol + "," + PricesForSymbol[symbol].ToJson() + "},"; });
-            Console.Write(AssetType + "[");
-            Console.Write(str);
-            Console.WriteLine("]");
-        }
         public List<string> GetSymbolNames()
         {
             return PricesForSymbol.Keys.ToList();

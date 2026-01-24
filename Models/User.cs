@@ -16,14 +16,16 @@ namespace b1.Models
         [BsonElement("email")]
         public string Email { get; set; } = null!;
 
-        [BsonElement("fname")]
+        [BsonElement("firstName")]
         public string Fname { get; set; } = null!;
 
-        [BsonElement("lname")]
+        [BsonElement("lastName")]
         public string Lname { get; set; } = null!;
 
         [BsonElement("password")]
         public string Password { get; set; } = null!;
 
+        [BsonElement("portfolio")]
+        public Portfolio UserPortfolio { get; set; } = null!;
     }
 }

@@ -13,17 +13,17 @@ namespace b1.Controllers
     [Produces("application/json")]
     public class EtfController : ControllerBase
     {
-        private PriceContext? _ctx;
+        private PriceContext? Ctx { get; set; }
 
-        private PriceContextHolder _ctxHolder { get; init; }
+        private PriceContextHolder CtxHolder { get; init; }
         private IMongoDatabase _db { get; init; }
         const string AssetTypeName = "etf";
         const string TickerColName = "tickers";
         public EtfController(IMongoDatabase dbInstance, PriceContextHolder ctxHolder)
         {
             _db = dbInstance;
-            _ctxHolder = ctxHolder;
-            _ctx = _ctxHolder.GetContext(AssetTypeName);
+            CtxHolder = ctxHolder;
+            Ctx = CtxHolder.GetContext(AssetTypeName);
         }
 
         [HttpGet]
@@ -36,12 +36,12 @@ namespace b1.Controllers
             //another option here is to use TaskCompletionSource<bool> and signal from the PriceService that we can run
             //but I'm not sure abt the mechanics of what the HTTP request component does when all the pent up requests will 
             //suddenly continue executing here, what if there are hundreds of thousands, rather return 503 for now.
-            if (_ctx == null)
+            if (Ctx == null)
             {
-                _ctx = _ctxHolder.GetContext(AssetTypeName);
+                Ctx = CtxHolder.GetContext(AssetTypeName);
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, null);
             }
-            var tickerNames = _ctx.GetSymbolNames();
+            var tickerNames = Ctx.GetSymbolNames();
             tickerNames.Sort();
             return Ok(tickerNames);
         }
@@ -83,11 +83,11 @@ namespace b1.Controllers
         [Route("{symbol}/price")]
         public ActionResult<TimedPrice> GetSymbolPrice([FromRoute] string symbol)
         {
-            if (_ctx == null)
+            if (Ctx == null)
             {
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, null);
             }
-            var res = _ctx.GetTimedPrice(symbol);
+            var res = Ctx.GetTimedPrice(symbol);
             if (res == null)
             {
                 return NotFound();

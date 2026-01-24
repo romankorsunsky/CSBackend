@@ -2,38 +2,41 @@ using System.Collections.Concurrent;
 
 namespace b1.Main
 {
-    public class ValueGeneratorFactory
+    public sealed class ValueGeneratorFactory
     {
-        private ConcurrentDictionary<string, Func<IValueGenerator>> _map; 
-        public ValueGeneratorFactory()
-        {
-            _map = new ConcurrentDictionary<string, Func<IValueGenerator>>();
-        }
+        private static readonly ValueGeneratorFactory _instance = new ValueGeneratorFactory();
 
+        static ValueGeneratorFactory(){}
+        private ConcurrentDictionary<string, Func<IValueGenerator>> ValGenMap { get; init; } 
+        private ValueGeneratorFactory()
+        {
+            ValGenMap = new ConcurrentDictionary<string, Func<IValueGenerator>>();
+        }
+        public static ValueGeneratorFactory GetInstance()
+        {
+            return _instance;
+        }
         //returns null if no matching ValueGenerator 
-        public IValueGenerator GetValueGenerator(string generatorType)
+        public IValueGenerator? GetValueGenerator(string generatorType)
         {
-            try
+            if (ValGenMap.TryGetValue(generatorType, out var maker))
             {
-                if (_map.TryGetValue(generatorType, out var maker))
-                {
-                    return maker();
-                }
-                else
-                {
-                    throw new ArgumentNullException("Didn't find the Generator, check arg or register one");
-                }
+                return maker();
             }
-            catch (ArgumentNullException)
+            else
             {
-                throw;
+                return null;
             }
         }
-
+        public ICollection<string> GetGeneratorTypes()
+        {
+            return ValGenMap.Keys;
+        }
+        
         public void RegisterGenerator(string generatorName, Func<IValueGenerator> instanceMaker)
         {
-            if(!(generatorName == null) && generatorName != "" && instanceMaker != null)
-                _map.TryAdd(generatorName, instanceMaker);
+            if (!(generatorName == null) && generatorName != "" && instanceMaker != null)
+                ValGenMap.TryAdd(generatorName, instanceMaker);
         }
     }
 }

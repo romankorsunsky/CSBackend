@@ -2,23 +2,28 @@ using System.Collections.Concurrent;
 using b1.Main;
 using Microsoft.VisualBasic;
 
-namespace b1.Services
+namespace b1.Main
 {
-    public class PriceContextHolder
+    public sealed class PriceContextHolder
     {
-        private ConcurrentDictionary<string, PriceContext> _contextMap;
-
-        public PriceContextHolder()
+        private static PriceContextHolder _instance = new PriceContextHolder();
+        private ConcurrentDictionary<string, PriceContext> ContextMap;
+        static PriceContextHolder(){}
+        private PriceContextHolder()
         {
-            _contextMap = new ConcurrentDictionary<string, PriceContext>();
+            ContextMap = new ConcurrentDictionary<string, PriceContext>();
+        }
+        public static PriceContextHolder GetInstance()
+        {
+            return _instance;
         }
         internal ICollection<PriceContext> GetAllContexts()
         {
-            return _contextMap.Values;
+            return ContextMap.Values;
         }
         internal PriceContext? GetContext(string assetType)
         {
-            if (_contextMap.TryGetValue(assetType, out var res))
+            if (ContextMap.TryGetValue(assetType, out var res))
             {
                 return res;
             }
@@ -31,7 +36,7 @@ namespace b1.Services
             {
                 throw new Exception("Bad AddContext arguments, check for proper name and a non null context");
             }
-            _contextMap.AddOrUpdate(assetType, ctx, (assetType, prev) => ctx);
+            ContextMap.AddOrUpdate(assetType, ctx, (assetType, prev) => ctx);
         }
     }
 }

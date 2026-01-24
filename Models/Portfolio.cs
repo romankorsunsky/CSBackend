@@ -19,7 +19,12 @@ namespace b1.Models
         public List<Position> Positions { get; init; } = null!;
 
         [BsonElement]
-        [DefaultValue("active")]
-        public string Status { get; set; } = null!;
+        [DefaultValue(Status.ACTIVE)]
+        public Status AccStatus { get; set; }
+    }
+    public enum Status
+    {
+        ACTIVE,
+        CLOSED
     }
 }

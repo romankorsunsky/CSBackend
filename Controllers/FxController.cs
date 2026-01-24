@@ -16,15 +16,15 @@ namespace b1.Controllers
     {
         private PriceContext? Ctx { get; set; }
 
-        private PriceContextHolder _ctxHolder { get; init; }
+        private PriceContextHolder CtxHolder { get; init; }
         private IMongoDatabase _db { get; init; }
         const string AssetTypeName = "fx";
         const string TickerColName = "tickers";
         public FxController(IMongoDatabase dbInstance, PriceContextHolder ctxHolder)
         {
             _db = dbInstance;
-            _ctxHolder = ctxHolder;
-            Ctx = _ctxHolder.GetContext(AssetTypeName);
+            CtxHolder = ctxHolder;
+            Ctx = CtxHolder.GetContext(AssetTypeName);
         }
 
         [HttpGet]
@@ -36,7 +36,7 @@ namespace b1.Controllers
         {
             if (Ctx == null)
             {
-                Ctx = _ctxHolder.GetContext(AssetTypeName);
+                Ctx = CtxHolder.GetContext(AssetTypeName);
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, null);
             }
             var tickerNames = Ctx.GetSymbolNames();

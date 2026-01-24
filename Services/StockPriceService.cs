@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using b1.Main;
 using b1.Models;
 using b1.Services;
+using Microsoft.AspNetCore.StaticAssets;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -22,30 +23,37 @@ namespace sadna.Services
         {
             return () => new GBMValueGenerator();
         }
-        protected internal override void ConfigureGenerators(string name, AssetEOD eod)
+        protected internal override void ConfigureGenerators(Dictionary<string,AssetEOD> assetsMap)
         {
+            var names = assetsMap.Keys.ToList();
             if (!_addedMCRV)
             {
                 ValueGenFactory.RegisterGenerator("mcrv", () => { return new MCRValueGenerator(); });
                 _addedMCRV = true;
             }
-            var volGen = (MCRValueGenerator)ValueGenFactory.GetValueGenerator("mcrv");
-            if (eod is StockEOD)
+            var temp = ValueGenFactory.GetValueGenerator("mcrv");
+            var volGen = (temp != null) ? (MCRValueGenerator)temp : null;
+            foreach (var name in names)
             {
-                var typedEod = (StockEOD)eod;
-                volGen.WithMean(typedEod.Volume).WithSigma(volGen.Sigma * volGen.Mean);
-                if (!_volumeGenerators.TryAdd(name, volGen))
-                    throw new Exception("Couldn't add VolumeGenerator for:" + name);
+                if (assetsMap.TryGetValue(name, out var eod))
+                {
+                    var typedEod = (StockEOD)eod;
+                    volGen.WithMean(typedEod.Volume).WithSigma(volGen.Sigma * volGen.Mean);
+                    if (!_volumeGenerators.TryAdd(name, volGen))
+                        throw new Exception("Couldn't add VolumeGenerator for:" + name);
+                }
+
             }
         }
         //assumes eod not null here
         protected internal override async Task<AssetEOD> MakeEod(AssetEOD eod, string name)
         {
+        
             if (eod is StockEOD)
-            { 
+            {
                 var typedEod = (StockEOD)eod;
                 var generator = AssetToEODGen[name];
-                var newDate = typedEod.Date.Date.AddDays(1); //AssetEOD has Date field, and so does a DateTime
+                var newDate = typedEod.Date.Date.AddDays(1);
                 var open = typedEod.Close;
                 var n1 = generator.GetValue(open);
                 var n2 = generator.GetValue(typedEod.Open);
