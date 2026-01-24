@@ -49,7 +49,6 @@ namespace b1.Main
             if (baseData != null)
             {
                 var assetTicker = new TickerData(baseData, AssetTypeName);
-
                 using (var reader = new StreamReader(csvFilePath))
                 {
 

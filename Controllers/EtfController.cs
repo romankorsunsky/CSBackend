@@ -13,17 +13,15 @@ namespace b1.Controllers
     [Produces("application/json")]
     public class EtfController : ControllerBase
     {
-        private PriceContext? Ctx { get; set; }
+        private PriceContext _priceContext { get; set; }
 
-        private PriceContextHolder CtxHolder { get; init; }
         private IMongoDatabase _db { get; init; }
         const string AssetTypeName = "etf";
         const string TickerColName = "tickers";
-        public EtfController(IMongoDatabase dbInstance, PriceContextHolder ctxHolder)
+        public EtfController(IMongoDatabase dbInstance, PriceContext ctx)
         {
             _db = dbInstance;
-            CtxHolder = ctxHolder;
-            Ctx = CtxHolder.GetContext(AssetTypeName);
+            _priceContext = ctx;
         }
 
         [HttpGet]
@@ -33,15 +31,7 @@ namespace b1.Controllers
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
         public ActionResult<IList<string>> GetTickerNames()
         {
-            //another option here is to use TaskCompletionSource<bool> and signal from the PriceService that we can run
-            //but I'm not sure abt the mechanics of what the HTTP request component does when all the pent up requests will 
-            //suddenly continue executing here, what if there are hundreds of thousands, rather return 503 for now.
-            if (Ctx == null)
-            {
-                Ctx = CtxHolder.GetContext(AssetTypeName);
-                return StatusCode(StatusCodes.Status503ServiceUnavailable, null);
-            }
-            var tickerNames = Ctx.GetSymbolNames();
+            var tickerNames = _priceContext.GetSymbolNames();
             tickerNames.Sort();
             return Ok(tickerNames);
         }
@@ -83,11 +73,11 @@ namespace b1.Controllers
         [Route("{symbol}/price")]
         public ActionResult<TimedPrice> GetSymbolPrice([FromRoute] string symbol)
         {
-            if (Ctx == null)
+            if (_priceContext == null)
             {
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, null);
             }
-            var res = Ctx.GetTimedPrice(symbol);
+            var res = _priceContext.GetTimedPrice(symbol);
             if (res == null)
             {
                 return NotFound();

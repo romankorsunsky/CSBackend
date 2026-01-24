@@ -14,17 +14,15 @@ namespace b1.Controllers
     [Produces("application/json")]
     public class StockController : ControllerBase
     {
-        private PriceContext? Ctx;
+        private PriceContext _priceContext;
 
-        private PriceContextHolder CtxHolder { get; init; }
-        private IMongoDatabase Db { get; init; }
+        private IMongoDatabase _db { get; init; }
         const string AssetTypeName = "stock";
         const string TickerColName = "tickers";
-        public StockController(IMongoDatabase dbInstance, PriceContextHolder ctxHolder)
+        public StockController(IMongoDatabase dbInstance, PriceContext ctx)
         {
-            Db = dbInstance;
-            CtxHolder = ctxHolder;
-            Ctx = CtxHolder.GetContext(AssetTypeName);
+            _db = dbInstance;
+            _priceContext = ctx;
         }
 
         [HttpGet]
@@ -34,15 +32,7 @@ namespace b1.Controllers
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
         public ActionResult<IList<string>> GetTickerNames()
         {
-            //another option here is to use TaskCompletionSource<bool> and signal from the PriceService that we can run
-            //but I'm not sure abt the mechanics of what the HTTP request component does when all the pent up requests will 
-            //suddenly continue executing here, what if there are hundreds of thousands, rather return 503 for now.
-            if (Ctx == null)
-            {
-                Ctx = CtxHolder.GetContext(AssetTypeName);
-                return StatusCode(StatusCodes.Status503ServiceUnavailable, null);
-            }
-            var tickerNames = Ctx.GetSymbolNames();
+            var tickerNames = _priceContext.GetSymbolNames();
             tickerNames.Sort();
             return Ok(tickerNames);
         }
@@ -55,7 +45,7 @@ namespace b1.Controllers
             {
                 return StatusCode(StatusCodes.Status400BadRequest, null);
             }
-            var tickerCol = Db.GetCollection<TickerData>(TickerColName);
+            var tickerCol = _db.GetCollection<TickerData>(TickerColName);
             var res = await tickerCol.Aggregate().Match(t => t.Symbol == symbol).
                     FirstOrDefaultAsync();
             if (res != null)
@@ -70,7 +60,7 @@ namespace b1.Controllers
         public async Task<ActionResult<ChartData>> GetChartData([FromRoute] string symbol)
         {
             ChartData chData = null!;
-            var col = Db.GetCollection<ChartData>(ProcessAssetBase.CHART_HIS_COL);
+            var col = _db.GetCollection<ChartData>(ProcessAssetBase.CHART_HIS_COL);
             var results = await col.FindAsync(ch => ch.Symbol == symbol);
             chData = results.FirstOrDefault();
             if (chData == null)
@@ -84,11 +74,11 @@ namespace b1.Controllers
         [Route("{symbol}/price")]
         public ActionResult<TimedPrice> GetSymbolPrice([FromRoute] string symbol)
         {
-            if (Ctx == null)
+            if (_priceContext == null)
             {
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, null);
             }
-            var res = Ctx.GetTimedPrice(symbol);
+            var res = _priceContext.GetTimedPrice(symbol);
             if (res == null)
             {
                 return NotFound();
@@ -105,7 +95,7 @@ namespace b1.Controllers
             List<TickerData> tickerData = [];
             if (names.Count == 0)
                 return Ok(tickerData);
-            var col = Db.GetCollection<TickerData>(TickerColName);
+            var col = _db.GetCollection<TickerData>(TickerColName);
             var filter = Builders<TickerData>.Filter.In(td => td.Symbol, names);
 
             var tickers = await col.FindAsync(filter);

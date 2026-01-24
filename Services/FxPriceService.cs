@@ -9,11 +9,9 @@ namespace sadna.Services
     public class FxPriceService : PriceServiceBase
     {
         public override string AssetType { get; init; } = "fx";
-        protected internal override Func<IValueGenerator> GetGeneratorCreator()
-        {
-            return () => new MCRValueGenerator();
-        }
-        public FxPriceService(PriceContextHolder ctx,IMongoDatabase dbInstance) : base(ctx,dbInstance) {}
+        
+        public FxPriceService(PriceContext ctx,IMongoDatabase dbInstance,IMessageChannel broker)
+         : base(ctx,dbInstance,broker) {}
 
         protected internal override void ConfigureGenerators(Dictionary<string,AssetEOD> assetsMap)
         {
@@ -23,16 +21,8 @@ namespace sadna.Services
             {
                 if (assetsMap.TryGetValue(name, out var eod))
                 {
-                    if (AssetToEODGen.TryGetValue(name, out var generator))
-                    {
-                        if (generator is MCRValueGenerator)
-                        {
-                            MCRValueGenerator wellTypedGen = (MCRValueGenerator)generator;
-                            wellTypedGen.WithMean(eod.Open);
-                        }
-                    }
+                    AssetToEODGen[name] = new MCRValueGenerator().WithMean(eod.Open); 
                 }
-
             }
         }
         protected internal override async Task<AssetEOD> MakeEod(AssetEOD eod,string name)

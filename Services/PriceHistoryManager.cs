@@ -16,11 +16,11 @@ namespace b1.Services
         
         private IMongoDatabase Db { get; init; }
 
-        private PriceContextHolder CtxHolder { get; init; }
-        public PriceHistoryManager(PriceContextHolder contextHolder, IMongoDatabase dbInstnace)
+        private PriceContext Ctx { get; init; }
+        public PriceHistoryManager(PriceContext context, IMongoDatabase dbInstnace)
         {
             Db = dbInstnace;
-            CtxHolder = contextHolder;
+            Ctx = context;
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -33,37 +33,32 @@ namespace b1.Services
 
             for (; ; )
             {
-                List<PriceContext> contexts = CtxHolder.GetAllContexts().ToList();
                 TimedPrice? latestPrice = null!;
-                foreach (var context in contexts) //for each PriceContext
+                symbolNames = Ctx.GetSymbolNames();
+                foreach (var symbol in symbolNames)
                 {
-
-                    symbolNames = context.GetSymbolNames();
-                    foreach (var symbol in symbolNames)
+                    latestPrice = Ctx.GetTimedPrice(symbol); //get latest TimedPrice
+                    List<UpdateDefinition<ChartData>> updates = new(4);
+                    var upd = Builders<ChartData>.Update.PushEach(ch => ch.LastDayPrices, new[] { latestPrice }, ONE_DAY_L);
+                    updates.Add(upd);
+                    if (count % TWO_WEEK_TICKS == 0)
                     {
-                        latestPrice = context.GetTimedPrice(symbol); //get latest TimedPrice
-                        List<UpdateDefinition<ChartData>> updates = new(4);
-                        var upd = Builders<ChartData>.Update.PushEach(ch => ch.LastDayPrices, new[] { latestPrice }, ONE_DAY_L);
-                        updates.Add(upd);
-                        if (count % TWO_WEEK_TICKS == 0)
-                        {
-                        upd = Builders<ChartData>.Update.PushEach(ch => ch.LastTwoWeekPrices, new[] { latestPrice }, TWO_WEEK_L);
-                        }
-                        if (count % TWO_MONTH_TICKS == 0)
-                        {
-                            upd = Builders<ChartData>.Update.PushEach(ch => ch.LastTwoMonthPrices, new[] { latestPrice }, TWO_MONTH_L);
-                        }
-                        if (count % ONE_YEAR_TICKS == 0)
-                        {
-                            upd = Builders<ChartData>.Update.PushEach(ch => ch.LastYearPrices, new[] { latestPrice }, ONE_YEAR_L);
-                        }
-                        if (count % FIVE_YEAR_TICKS == 0)
-                        {
-                            upd = Builders<ChartData>.Update.PushEach(ch => ch.LastFiveYearPrices, new[] { latestPrice }, FIVE_YEAR_L);
-                        }
-                        var combinedUpdates = Builders<ChartData>.Update.Combine(updates);
-                        await chartsCol.UpdateOneAsync(ch => ch.Symbol == symbol, combinedUpdates);
+                    upd = Builders<ChartData>.Update.PushEach(ch => ch.LastTwoWeekPrices, new[] { latestPrice }, TWO_WEEK_L);
                     }
+                    if (count % TWO_MONTH_TICKS == 0)
+                    {
+                        upd = Builders<ChartData>.Update.PushEach(ch => ch.LastTwoMonthPrices, new[] { latestPrice }, TWO_MONTH_L);
+                    }
+                    if (count % ONE_YEAR_TICKS == 0)
+                    {
+                        upd = Builders<ChartData>.Update.PushEach(ch => ch.LastYearPrices, new[] { latestPrice }, ONE_YEAR_L);
+                    }
+                    if (count % FIVE_YEAR_TICKS == 0)
+                    {
+                        upd = Builders<ChartData>.Update.PushEach(ch => ch.LastFiveYearPrices, new[] { latestPrice }, FIVE_YEAR_L);
+                    }
+                    var combinedUpdates = Builders<ChartData>.Update.Combine(updates);
+                    await chartsCol.UpdateOneAsync(ch => ch.Symbol == symbol, combinedUpdates);
                 }
                 await Task.Delay(TimeSpan.FromSeconds(12));
                 count++;

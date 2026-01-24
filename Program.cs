@@ -49,7 +49,6 @@ builder.Services.AddAuthentication(opts =>
         }
     };
 });
-
 builder.Services.Configure<MongoSettings>(
     builder.Configuration.GetSection("MongoSettings"));
 
@@ -71,7 +70,18 @@ builder.Services.AddSingleton<IMongoDatabase>(sp =>
     return client.GetDatabase(settings.DatabaseName);
 
 });
-
+//builder.Services.AddSingleton<InMemoryCache>();
+builder.Services.AddSingleton<AssetService>();
+builder.Services.AddSingleton<IMessageChannel>(sp =>
+{
+    return new DefaultMessageChannel();
+});
+builder.Services.AddSingleton<PriceContext>(sp =>
+{
+    var channel = sp.GetRequiredService<IMessageChannel>();
+    
+    return new PriceContext(channel);
+});
 builder.Services.AddSingleton<IUserRepository>(sp =>
 {
     var context = sp.GetRequiredService<IMongoDatabase>();
@@ -83,59 +93,38 @@ builder.Services.AddSingleton<TokenProvider>();
 builder.Services.AddScoped<UserAuthenticator>();
 builder.Services.AddScoped<PreProcessor>();
 
-//also created a Context to hold our prices, the project is small so I use a ConcurrentDictionary
-//but maybe Redis is worth it, because we can distribute Redis too.
-//if we do go for Redis, we could start thinking of what we can cache, maybe price histories for most popular stocks etc.
-builder.Services.AddSingleton<PriceContextHolder>(sp =>
-{
-    return PriceContextHolder.GetInstance();
-});
-
 //initialize services responsible for price generation
 builder.Services.AddSingleton<StockPriceService>(sp =>
 {
-    var db = sp.GetService<IMongoDatabase>();
-    var ctx = sp.GetService<PriceContextHolder>();
-    if (ctx != null && db != null)
-        return new StockPriceService(ctx, db);
-    else
-    {
-        throw new ArgumentNullException("PriceCcontextHolder OR Database instance didn't initialize properly");
-    }
+    var db = sp.GetRequiredService<IMongoDatabase>();
+    var ctx = sp.GetRequiredService<PriceContext>();
+    var broker = sp.GetRequiredService<IMessageChannel>();
+    
+    return new StockPriceService(ctx, db,broker);
 });
 builder.Services.AddSingleton<EtfPriceService>(sp =>
 {
-    var db = sp.GetService<IMongoDatabase>();
-    var ctx = sp.GetService<PriceContextHolder>();
-    if (ctx != null && db != null)
-        return new EtfPriceService(ctx, db);
-    else
-    {
-        throw new ArgumentNullException("PriceCcontextHolder OR Database instance didn't initialize properly");
-    }
+    var db = sp.GetRequiredService<IMongoDatabase>();
+    var ctx = sp.GetRequiredService<PriceContext>();
+    var broker = sp.GetRequiredService<IMessageChannel>();
+    
+    return new EtfPriceService(ctx, db,broker);
 });
 builder.Services.AddSingleton<FxPriceService>(sp =>
 {
-    var db = sp.GetService<IMongoDatabase>();
-    var ctx = sp.GetService<PriceContextHolder>();
-    if (ctx != null && db != null)
-        return new FxPriceService(ctx, db);
-    else
-    {
-        throw new ArgumentNullException("PriceCcontextHolder OR Database instance didn't initialize properly");
-    }
+    var db = sp.GetRequiredService<IMongoDatabase>();
+    var ctx = sp.GetRequiredService<PriceContext>();
+    var broker = sp.GetRequiredService<IMessageChannel>();
+    
+    return new FxPriceService(ctx, db,broker);
 });
 // services responsible for putting the prices in their respective historical location
 builder.Services.AddSingleton<PriceHistoryManager>(sp =>
 {
-    var db = sp.GetService<IMongoDatabase>();
-    var ctx = sp.GetService<PriceContextHolder>();
-    if (ctx != null && db != null)
-        return new PriceHistoryManager(ctx, db);
-    else
-    {
-        throw new ArgumentNullException("PriceCcontextHolder OR Database instance didn't initialize properly");
-    }
+    var db = sp.GetRequiredService<IMongoDatabase>();
+    var ctx = sp.GetRequiredService<PriceContext>();
+    
+    return new PriceHistoryManager(ctx, db);
 });
 
 builder.Services.AddScoped<UserService>(sp =>

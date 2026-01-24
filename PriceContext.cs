@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using b1.Messages;
 using b1.Models;
 using MongoDB.Bson;
 
@@ -6,21 +7,25 @@ namespace b1.Main
 {
     public class PriceContext
     {
-        public string AssetType { get; init; }
 
-        public ConcurrentDictionary<string, TimedPrice> PricesForSymbol { get; init; } = null!;
-
-        public PriceContext(string type)
+        private ConcurrentDictionary<string, TimedPrice> PricesForSymbol { get; init; } = null!;
+        private readonly IMessageChannel _msgBroker;
+        public PriceContext(IMessageChannel broker)
         {
-            AssetType = type;
+            _msgBroker = broker;
+            broker.Subscribe<PriceChangedMsg>(PriceUpdateHandler);
             PricesForSymbol = new ConcurrentDictionary<string, TimedPrice>();
         }
 
-        //add a <symbol name, asset price> entry, if the symbol doesn't exist, adds it.
-        public void PutPrice(string symbol, TimedPrice tp)
+        public async Task PriceUpdateHandler(PriceChangedMsg e)
         {
-            if (symbol != null && tp.Price >= 0)
+            await Task.Run(async () =>
+            {
+                var tp = e.TimedPr;
+                var symbol = e.Symbol;
+                if (symbol != null && tp.Price >= 0)
                 PricesForSymbol.AddOrUpdate(symbol, tp, (symbol, prev) => tp);
+            });   
         }
         public TimedPrice? GetTimedPrice(string symbol)
         {   

@@ -57,14 +57,14 @@ namespace b1.Main
                     string? line = reader.ReadLine(); //I constructed the csv's myself so I can confidentyly say we can execute this line
                     List<AssetEOD> eodList = new List<AssetEOD>();
                     while ((line = reader.ReadLine()) != null)
-                    {   
+                    {
                         var splitline = line.Split(",");
                         double open, high, low, close, dividends, splits;
                         int volume;
 
                         date = DateTime.Parse(splitline[0].Split(" ")[0]); //extract date
                         date = DateTime.SpecifyKind(date, DateTimeKind.Utc);
-                        
+
                         if (!double.TryParse(splitline[1], out open))
                             continue;
                         if (!double.TryParse(splitline[2], out high))

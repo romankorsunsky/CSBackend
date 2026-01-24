@@ -11,38 +11,30 @@ namespace sadna.Services
 {
     public class StockPriceService: PriceServiceBase
     {
-        private bool _addedMCRV = false;
         private Dictionary<string, IValueGenerator> _volumeGenerators;
         public override string AssetType { get; init; } = "stock";
 
-        public StockPriceService(PriceContextHolder ctx,IMongoDatabase dbInstance) : base(ctx,dbInstance) {
+        public StockPriceService(PriceContext ctx,IMongoDatabase dbInstance,IMessageChannel broker)
+         : base(ctx,dbInstance,broker)
+        {
             _volumeGenerators = new Dictionary<string, IValueGenerator>();
         }
 
-        internal protected override Func<IValueGenerator> GetGeneratorCreator()
-        {
-            return () => new GBMValueGenerator();
-        }
         protected internal override void ConfigureGenerators(Dictionary<string,AssetEOD> assetsMap)
         {
             var names = assetsMap.Keys.ToList();
-            if (!_addedMCRV)
-            {
-                ValueGenFactory.RegisterGenerator("mcrv", () => { return new MCRValueGenerator(); });
-                _addedMCRV = true;
-            }
-            var temp = ValueGenFactory.GetValueGenerator("mcrv");
-            var volGen = (temp != null) ? (MCRValueGenerator)temp : null;
+            var priceGenerator = new GBMValueGenerator();
+            var volGenerator = new MCRValueGenerator();
             foreach (var name in names)
             {
                 if (assetsMap.TryGetValue(name, out var eod))
                 {
+                    AssetToEODGen.Add(name, priceGenerator);
                     var typedEod = (StockEOD)eod;
-                    volGen.WithMean(typedEod.Volume).WithSigma(volGen.Sigma * volGen.Mean);
-                    if (!_volumeGenerators.TryAdd(name, volGen))
+                    volGenerator.WithMean(typedEod.Volume).WithSigma(volGenerator.Sigma * volGenerator.Mean);
+                    if (!_volumeGenerators.TryAdd(name, volGenerator))
                         throw new Exception("Couldn't add VolumeGenerator for:" + name);
                 }
-
             }
         }
         //assumes eod not null here

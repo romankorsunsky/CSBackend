@@ -5,6 +5,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using b1.Main;
+using b1.Messages;
 using b1.Models;
 using b1.Services;
 using MathNet.Numerics.Distributions;
@@ -17,54 +18,45 @@ namespace b1.Services
     public abstract class PriceServiceBase : BackgroundService
     {
         const int MAX_INTERVAL = 8640;
-        protected PriceContextHolder CtxHolder { get; init; }
+        protected PriceContext Ctx { get; init; }
         protected internal IMongoDatabase Db { get; init; }
-        static protected internal ValueGeneratorFactory ValueGenFactory { get;}
+        private IMessageChannel MsgBroker { get; init; }
         protected internal Dictionary<string, IValueGenerator> AssetToEODGen { get; init; }
-        protected internal Dictionary<string, AssetEOD> AssetToEOD { get; init; }
+        protected internal Dictionary<string, AssetEOD> AssetToEOD { get; init; } //latest End Of Day entry
         protected internal Dictionary<string, AssetEOD> AssetToTmrwEOD { get; init; }
         public abstract string AssetType { get; init; }
-        static PriceServiceBase()
+        protected PriceServiceBase(
+            PriceContext ctx,
+            IMongoDatabase dbInstance,
+            IMessageChannel msgBroker) : base()
         {
-            ValueGenFactory = ValueGeneratorFactory.GetInstance();
-        }
-        protected PriceServiceBase(PriceContextHolder holder, IMongoDatabase dbInstance) : base()
-        {
+            MsgBroker = msgBroker;
             Db = dbInstance;
-            CtxHolder = holder;
+            Ctx = ctx;
             AssetToEODGen = new Dictionary<string, IValueGenerator>();
             AssetToEOD = new Dictionary<string, AssetEOD>();
             AssetToTmrwEOD = new Dictionary<string, AssetEOD>();
         }
 
         internal protected abstract Task<AssetEOD> MakeEod(AssetEOD eod, string assetName);
-        //this method should add a Delegate to the ValueGeneratorFactory. Basically register the corresponding
-        //IValueGenerator in the factoru, so we can get objects to generate prices.
-        internal protected abstract Func<IValueGenerator> GetGeneratorCreator();
-
         //one important aspect of Initialize is setting the initial value of asset prices in the PriceContext
         //it is also making sure AssetToEOD containts initial EOD values.
         protected internal void Initialize(List<string> assetNames)
         {
-            Func<IValueGenerator> maker = GetGeneratorCreator(); //how to create ValueGenerator for subclasses
-            ValueGenFactory.RegisterGenerator(AssetType, maker);
-            CtxHolder.AddContext(AssetType, new PriceContext(AssetType));
             DateTime dateNow = DateTime.UtcNow;
-            var priceCtx = CtxHolder.GetContext(AssetType);
             Dictionary<string, AssetEOD> assets = new();
             foreach (var s in assetNames)
             {
                 AssetEOD? eodLast;
                 eodLast = GetLastEOD(s);
-                var added = false;
-                if (eodLast != null && priceCtx != null)
+                if (eodLast != null)
                 {
-                    AssetToEODGen.Add(s, maker.Invoke());
-                    added = AssetToEOD.TryAdd(s, eodLast);
-                    if (added)
+                    if (AssetToEOD.TryAdd(s, eodLast))
                     {
-                        priceCtx.PutPrice(s, new TimedPrice(eodLast.Close, dateNow));
-
+                        //the following line makes sure the PriceContext has an initial price for 
+                        //future calculations
+                        PublishPrice(s, new TimedPrice(eodLast.Close, dateNow));
+                        assets.Add(s, eodLast);
                     }
                 }
                 else
@@ -75,7 +67,7 @@ namespace b1.Services
             ConfigureGenerators(assets);
         }
 
-        abstract internal protected void ConfigureGenerators(Dictionary<string,AssetEOD> assetsMap);
+        abstract internal protected void ConfigureGenerators(Dictionary<string, AssetEOD> assetsMap);
 
         protected internal AssetEOD GetLastEOD(string name)
         {
@@ -90,13 +82,13 @@ namespace b1.Services
             throw new ArgumentNullException("Couldn't find EOD data for asset: " + name);
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {   
+        {
             var col = Db.GetCollection<TickerData>("tickers");
+            //get tickers of my type
             var filter = Builders<TickerData>.Filter.Eq(ticker => ticker.TickerType, AssetType);
             var assetList = col.Find(filter).Project(ticker => ticker.Symbol).ToList();
             Initialize(assetList);
             var _rft = new Dictionary<string, bool>(); // ready_for_tomorrow <- indicates if we can put tomorrows EOD
-            var _priceContext = CtxHolder.GetContext(AssetType);
             foreach (var name in assetList)
             {
                 _rft.Add(name, false);
@@ -151,7 +143,15 @@ namespace b1.Services
                             open = currentEod.Open;
                             close = currentEod.Close;
                             var price = open + (close - open) * (((x) / (double)MAX_INTERVAL) + normal.Sample() * x * ((double)MAX_INTERVAL - x) / Math.Pow(MAX_INTERVAL / 2.0, 2));
-                            _priceContext?.PutPrice(name, new TimedPrice(price, dateNow));
+
+                            try
+                            {
+                                await PublishPrice(name, new TimedPrice(price, dateNow));
+                            }
+                            catch (Exception e)
+                            {
+                                Console.WriteLine("failed to produce prices for " + name);
+                            }
                         }
                     }
                     catch (Exception e)
@@ -163,7 +163,10 @@ namespace b1.Services
                 await Task.Delay(TimeSpan.FromSeconds(10));
             }
         }
-        
-            
+        private async Task PublishPrice(string symbol, TimedPrice tp)
+        {  
+            var arg = new PriceChangedMsg(symbol, tp);
+            await MsgBroker.PublishAsync<PriceChangedMsg>(arg); 
+        }
     }
 }

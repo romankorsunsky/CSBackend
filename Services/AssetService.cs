@@ -14,8 +14,14 @@ namespace b1.Services
             _msgBroker.Subscribe<PriceChangedMsg>(HandlePriceChange);
         }
 
-        public void HandlePriceChange(PriceChangedMsg msg) {
-            Console.WriteLine(msg.Symbol + " changed to :" + msg.Price);
+        public async Task HandlePriceChange(PriceChangedMsg msg)
+        {
+            Console.WriteLine(msg.Symbol + " changed to :" + msg.TimedPr.Price);
+        }
+        public async Task HandleNewAsset(NewAssetArrived msg)
+        {
+            
+            return;
         }
     }
 }

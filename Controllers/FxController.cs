@@ -14,17 +14,15 @@ namespace b1.Controllers
     [Produces("application/json")]
     public class FxController : ControllerBase
     {
-        private PriceContext? Ctx { get; set; }
+        private PriceContext _priceContext { get; set; }
 
-        private PriceContextHolder CtxHolder { get; init; }
         private IMongoDatabase _db { get; init; }
         const string AssetTypeName = "fx";
         const string TickerColName = "tickers";
-        public FxController(IMongoDatabase dbInstance, PriceContextHolder ctxHolder)
+        public FxController(IMongoDatabase dbInstance, PriceContext ctx)
         {
             _db = dbInstance;
-            CtxHolder = ctxHolder;
-            Ctx = CtxHolder.GetContext(AssetTypeName);
+            _priceContext = ctx;
         }
 
         [HttpGet]
@@ -34,12 +32,7 @@ namespace b1.Controllers
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
         public ActionResult<IList<string>> GetTickerNames()
         {
-            if (Ctx == null)
-            {
-                Ctx = CtxHolder.GetContext(AssetTypeName);
-                return StatusCode(StatusCodes.Status503ServiceUnavailable, null);
-            }
-            var tickerNames = Ctx.GetSymbolNames();
+            var tickerNames = _priceContext.GetSymbolNames();
             tickerNames.Sort();
             return Ok(tickerNames);
         }
@@ -81,11 +74,11 @@ namespace b1.Controllers
         [Route("{symbol}/price")]
         public ActionResult<TimedPrice> GetSymbolPrice([FromRoute] string symbol)
         {
-            if (Ctx == null)
+            if (_priceContext == null)
             {
                 return StatusCode(StatusCodes.Status503ServiceUnavailable);
             }
-            var res = Ctx.GetTimedPrice(symbol);
+            var res = _priceContext.GetTimedPrice(symbol);
             if (res == null)
             {
                 return NotFound();
