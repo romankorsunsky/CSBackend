@@ -15,7 +15,7 @@ using MongoDB.Driver;
 
 namespace b1.Services
 {
-    public abstract class PriceServiceBase : BackgroundService
+    public abstract class PriceBackgroundServiceBase : BackgroundService
     {
         const int MAX_INTERVAL = 8640;
         protected PriceContext Ctx { get; init; }
@@ -25,7 +25,7 @@ namespace b1.Services
         protected internal Dictionary<string, AssetEOD> AssetToEOD { get; init; } //latest End Of Day entry
         protected internal Dictionary<string, AssetEOD> AssetToTmrwEOD { get; init; }
         public abstract string AssetType { get; init; }
-        protected PriceServiceBase(
+        protected PriceBackgroundServiceBase(
             PriceContext ctx,
             IMongoDatabase dbInstance,
             IMessageChannel msgBroker) : base()

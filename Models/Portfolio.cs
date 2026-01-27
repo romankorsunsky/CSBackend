@@ -5,26 +5,20 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace b1.Models
 {
-    public class Portfolio
+    public abstract class Portfolio
     {
+
         [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
+        [BsonRepresentation(BsonType.String)]
         public string Id;
 
         [BsonElement]
         [NotNull]
-        public string OwnerUsername { get; set; } = null!;
+        public string OwnerUsername { get; init; }
 
         [BsonElement]
-        public List<Position> Positions { get; init; } = null!;
-
-        [BsonElement]
-        [DefaultValue(Status.ACTIVE)]
-        public Status AccStatus { get; set; }
+        public string DisplayName { get; init; }
     }
-    public enum Status
-    {
-        ACTIVE,
-        CLOSED
-    }
+    public class RegularPortfolio : Portfolio { }
+    public class AdvancedPortfolio: Portfolio { }
 }

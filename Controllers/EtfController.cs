@@ -8,97 +8,14 @@ using MongoDB.Driver;
 
 namespace b1.Controllers
 {
-    [ApiController]
     [Route("api/v1/tickers/etf")]
-    [Produces("application/json")]
-    public class EtfController : ControllerBase
+    public class EtfController : AssetBaseController
     {
-        private PriceContext _priceContext { get; set; }
-
-        private IMongoDatabase _db { get; init; }
-        const string AssetTypeName = "etf";
-        const string TickerColName = "tickers";
-        public EtfController(IMongoDatabase dbInstance, PriceContext ctx)
+        protected override string AssetTypeName { get => "etf"; }
+        public EtfController(IMongoDatabase dbInstance, PriceContext ctx,AssetService assetService):
+            base(dbInstance,ctx,assetService)
         {
-            _db = dbInstance;
-            _priceContext = ctx;
+           
         }
-
-        [HttpGet]
-        [Route("symbolnames")]
-        [ProducesResponseType<IList<string>>(StatusCodes.Status200OK)]
-        [ProducesResponseType<IList<string>>(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-        public ActionResult<IList<string>> GetTickerNames()
-        {
-            var tickerNames = _priceContext.GetSymbolNames();
-            tickerNames.Sort();
-            return Ok(tickerNames);
-        }
-
-        [HttpGet]
-        [Route("{symbol}")]
-        public async Task<ActionResult<TickerData>> GetTicker(string symbol)
-        {
-            if (symbol == null || symbol == "")
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, null);
-            }
-            var tickerCol = _db.GetCollection<TickerData>(TickerColName);
-            var res = await tickerCol.Aggregate().Match(t => t.Symbol == symbol).
-                    FirstOrDefaultAsync();
-            if (res != null)
-            {
-                return Ok(res);
-            }
-            return NotFound();
-        }
-
-        [HttpGet]
-        [Route("{symbol}/history")]
-        public ActionResult<ChartData> GetChartData([FromRoute] string symbol)
-        {
-            ChartData chData = null!;
-            var col = _db.GetCollection<ChartData>(ProcessAssetBase.CHART_HIS_COL);
-            var results = col.Find(ch => ch.Symbol == symbol);
-            chData = results.FirstOrDefault();
-            if (chData == null)
-            {
-                return StatusCode(StatusCodes.Status404NotFound, null);
-            }
-            return Ok(chData);
-        }
-
-        [HttpGet]
-        [Route("{symbol}/price")]
-        public ActionResult<TimedPrice> GetSymbolPrice([FromRoute] string symbol)
-        {
-            if (_priceContext == null)
-            {
-                return StatusCode(StatusCodes.Status503ServiceUnavailable, null);
-            }
-            var res = _priceContext.GetTimedPrice(symbol);
-            if (res == null)
-            {
-                return NotFound();
-            }
-            return Ok(res);
-        }
-        
-        [HttpGet]
-        [Route("symbols/{symbolCSV}")]
-        public async Task<ActionResult<List<TickerData>>> GetTickers([FromRoute] string symbolCSV)
-        {
-            List<string> names = symbolCSV.Split(",").ToList();
-            List<TickerData> tickerData = [];
-            if (names.Count == 0)
-                return Ok(tickerData);
-            var col = _db.GetCollection<TickerData>(TickerColName);
-            var filter = Builders<TickerData>.Filter.In(td => td.Symbol, names);
-
-            var tickers = await col.FindAsync(filter);
-            tickerData = await tickers.ToListAsync();
-            return Ok(tickerData);
-        } 
     }
 }

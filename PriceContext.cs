@@ -13,7 +13,7 @@ namespace b1.Main
         public PriceContext(IMessageChannel broker)
         {
             _msgBroker = broker;
-            broker.Subscribe<PriceChangedMsg>(PriceUpdateHandler);
+            broker.SubscribeToEvent<PriceChangedMsg>(PriceUpdateHandler);
             PricesForSymbol = new ConcurrentDictionary<string, TimedPrice>();
         }
 

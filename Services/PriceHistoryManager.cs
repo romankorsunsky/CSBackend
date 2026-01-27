@@ -43,7 +43,7 @@ namespace b1.Services
                     updates.Add(upd);
                     if (count % TWO_WEEK_TICKS == 0)
                     {
-                    upd = Builders<ChartData>.Update.PushEach(ch => ch.LastTwoWeekPrices, new[] { latestPrice }, TWO_WEEK_L);
+                        upd = Builders<ChartData>.Update.PushEach(ch => ch.LastTwoWeekPrices, new[] { latestPrice }, TWO_WEEK_L);
                     }
                     if (count % TWO_MONTH_TICKS == 0)
                     {

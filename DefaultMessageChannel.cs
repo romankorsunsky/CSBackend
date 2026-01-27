@@ -7,33 +7,49 @@ namespace b1.Main
 {
     public class DefaultMessageChannel : IMessageChannel
     {
-        private ConcurrentDictionary<Type,List<Func<object,Task>>> _map { get; init; }
+        private ConcurrentDictionary<Type, List<Action<object>>> _eventHandlers { get; init; }
+        private ConcurrentDictionary<Type, Func<object,Task>> _commandExecutors { get; init; }
         public DefaultMessageChannel()
         {
-            _map = new ConcurrentDictionary<Type, List<Func<object,Task>>>();
+            _eventHandlers = new ConcurrentDictionary<Type, List<Action<object>>>();
+            _commandExecutors = new ConcurrentDictionary<Type, Func<object, Task>>();
         }
-        public async Task PublishAsync<TMessage>(TMessage e)
+        public Task PublishEvent<TMessage>(TMessage e)
         {
-            if (_map.TryGetValue(typeof(TMessage), out var handlers))
+            if (_eventHandlers.TryGetValue(typeof(TMessage), out var handlers))
             {
-                var taskList = new List<Task>();
                 lock (handlers)
                 {
                     foreach (var handler in handlers)
                     {
-                        taskList.Add(handler(e));
+                        handler(e);
                     }
                 }
-                await Task.WhenAll(taskList);
             }
+            return Task.CompletedTask;
         }
 
-        public void Subscribe<TMessage>(Func<TMessage,Task> handler)
+        public void SubscribeToEvent<TMessage>(Action<TMessage> handler)
         {
-            var handlers = _map.GetOrAdd(typeof(TMessage), _ => new List<Func<object,Task>>());
-            lock(handlers){
+            var handlers = _eventHandlers.GetOrAdd(typeof(TMessage), _ => new List<Action<object>>());
+            lock (handlers)
+            {
                 handlers.Add(message => handler((TMessage)message));
             }
         }
+
+        public Task ExecuteCommandAsync<ICommand>(ICommand command)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task AdoptCommandAsync<ICommand>(Func<ICommand, Task> handler)
+        {
+            throw new NotImplementedException();
+        }
+
+        /*
+        *should add Unsubscribe method
+        */
     }
 }

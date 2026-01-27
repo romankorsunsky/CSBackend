@@ -6,11 +6,11 @@ using MongoDB.Driver;
 
 namespace sadna.Services
 {
-    public class FxPriceService : PriceServiceBase
+    public class FxPriceBackgroundService : PriceBackgroundServiceBase
     {
         public override string AssetType { get; init; } = "fx";
         
-        public FxPriceService(PriceContext ctx,IMongoDatabase dbInstance,IMessageChannel broker)
+        public FxPriceBackgroundService(PriceContext ctx,IMongoDatabase dbInstance,IMessageChannel broker)
          : base(ctx,dbInstance,broker) {}
 
         protected internal override void ConfigureGenerators(Dictionary<string,AssetEOD> assetsMap)

@@ -26,6 +26,6 @@ namespace b1.Models
         public string Password { get; set; } = null!;
 
         [BsonElement("portfolio")]
-        public Portfolio UserPortfolio { get; set; } = null!;
+        public string UserPortfolioId { get; set; } = null!;
     }
 }

@@ -6,11 +6,11 @@ using MongoDB.Driver;
 
 namespace b1.Services
 {
-    public class EtfPriceService : PriceServiceBase
+    public class EtfPriceBackgroundService : PriceBackgroundServiceBase
     {
         private Dictionary<string, IValueGenerator> _volumeGenerators;
         public override string AssetType { get; init; } = "etf";
-        public EtfPriceService(PriceContext ctx,IMongoDatabase dbInstance,IMessageChannel broker)
+        public EtfPriceBackgroundService(PriceContext ctx,IMongoDatabase dbInstance,IMessageChannel broker)
          : base(ctx,dbInstance,broker)
         {
             _volumeGenerators = new Dictionary<string, IValueGenerator>();

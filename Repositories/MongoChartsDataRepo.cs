@@ -3,10 +3,10 @@ using MongoDB.Driver;
 
 namespace b1.Repositories
 {
-    public class ChartsDataRepo
+    public class MongoChartsDataRepo
     {
         private IMongoCollection<ChartData> Charts { get; set; } = null!;
-        public ChartsDataRepo(IMongoDatabase db)
+        public MongoChartsDataRepo(IMongoDatabase db)
         {
             Charts = db.GetCollection<ChartData>("charthistory");
         }

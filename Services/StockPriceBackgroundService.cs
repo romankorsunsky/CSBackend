@@ -9,12 +9,12 @@ using MongoDB.Driver;
 
 namespace sadna.Services
 {
-    public class StockPriceService: PriceServiceBase
+    public class StockPriceBackgroundService: PriceBackgroundServiceBase
     {
         private Dictionary<string, IValueGenerator> _volumeGenerators;
         public override string AssetType { get; init; } = "stock";
 
-        public StockPriceService(PriceContext ctx,IMongoDatabase dbInstance,IMessageChannel broker)
+        public StockPriceBackgroundService(PriceContext ctx,IMongoDatabase dbInstance,IMessageChannel broker)
          : base(ctx,dbInstance,broker)
         {
             _volumeGenerators = new Dictionary<string, IValueGenerator>();

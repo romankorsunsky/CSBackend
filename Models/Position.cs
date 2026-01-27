@@ -3,7 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace b1.Models
 {
-    public sealed class Position
+    public class Position
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]

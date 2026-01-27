@@ -13,15 +13,23 @@ using sadna.Services;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.IdentityModel.JsonWebTokens;
+using b1.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
+
+//===================== CONFIGURATIONS =================================
 JsonWebTokenHandler.DefaultInboundClaimTypeMap.Clear();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 builder.Services.AddAuthorization();
+builder.Host.UseDefaultServiceProvider(opts =>
+{
+    opts.ValidateScopes = true;
+});
 builder.Services.AddAuthentication(opts =>
 {
     opts.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -54,7 +62,7 @@ builder.Services.Configure<MongoSettings>(
 
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
-    
+
 builder.Services.AddSingleton<IMongoClient>(sp =>
 {
     var settings = sp.GetRequiredService<IOptions<MongoSettings>>().Value;
@@ -62,6 +70,8 @@ builder.Services.AddSingleton<IMongoClient>(sp =>
     return service;
 
 });
+//===================== SERVICES =================================
+
 //added the MongoDB instance to inject
 builder.Services.AddSingleton<IMongoDatabase>(sp =>
 {
@@ -70,87 +80,54 @@ builder.Services.AddSingleton<IMongoDatabase>(sp =>
     return client.GetDatabase(settings.DatabaseName);
 
 });
+builder.Services.AddSingleton<MongoChartsDataRepo>();
 //builder.Services.AddSingleton<InMemoryCache>();
-builder.Services.AddSingleton<AssetService>();
+builder.Services.AddSingleton<IUserRepository>(sp =>
+{
+    var db = sp.GetRequiredService<IMongoDatabase>();
+    return new MongoUserRepository(db);
+});
 builder.Services.AddSingleton<IMessageChannel>(sp =>
 {
     return new DefaultMessageChannel();
 });
+builder.Services.AddSingleton<AssetService>();
 builder.Services.AddSingleton<PriceContext>(sp =>
 {
     var channel = sp.GetRequiredService<IMessageChannel>();
-    
     return new PriceContext(channel);
 });
-builder.Services.AddSingleton<IUserRepository>(sp =>
-{
-    var context = sp.GetRequiredService<IMongoDatabase>();
-    return new MongoUserRepository(context);
-});
-
-builder.Services.AddSingleton<ChartsDataRepo>();
-builder.Services.AddSingleton<TokenProvider>();
+builder.Services.AddSingleton<ITickerRepository,MongoTickerRepo>();
+builder.Services.AddScoped<TokenProvider>();
 builder.Services.AddScoped<UserAuthenticator>();
 builder.Services.AddScoped<PreProcessor>();
 
-//initialize services responsible for price generation
-builder.Services.AddSingleton<StockPriceService>(sp =>
-{
-    var db = sp.GetRequiredService<IMongoDatabase>();
-    var ctx = sp.GetRequiredService<PriceContext>();
-    var broker = sp.GetRequiredService<IMessageChannel>();
-    
-    return new StockPriceService(ctx, db,broker);
-});
-builder.Services.AddSingleton<EtfPriceService>(sp =>
-{
-    var db = sp.GetRequiredService<IMongoDatabase>();
-    var ctx = sp.GetRequiredService<PriceContext>();
-    var broker = sp.GetRequiredService<IMessageChannel>();
-    
-    return new EtfPriceService(ctx, db,broker);
-});
-builder.Services.AddSingleton<FxPriceService>(sp =>
-{
-    var db = sp.GetRequiredService<IMongoDatabase>();
-    var ctx = sp.GetRequiredService<PriceContext>();
-    var broker = sp.GetRequiredService<IMessageChannel>();
-    
-    return new FxPriceService(ctx, db,broker);
-});
 // services responsible for putting the prices in their respective historical location
 builder.Services.AddSingleton<PriceHistoryManager>(sp =>
 {
-    var db = sp.GetRequiredService<IMongoDatabase>();
-    var ctx = sp.GetRequiredService<PriceContext>();
+    var db = sp.GetRequiredService<IMongoDatabase>(); //singleton
+    var ctx = sp.GetRequiredService<PriceContext>(); //singleton
     
     return new PriceHistoryManager(ctx, db);
 });
 
-builder.Services.AddScoped<UserService>(sp =>
-{
-    var userRepo = sp.GetRequiredService<IUserRepository>();
-    return new UserService(userRepo);
-});
+builder.Services.AddScoped<UserService>();
 
-builder.Services.AddHostedService<StockPriceService>();
-builder.Services.AddHostedService<EtfPriceService>();
-builder.Services.AddHostedService<FxPriceService>();
+builder.Services.AddHostedService<StockPriceBackgroundService>();
+builder.Services.AddHostedService<EtfPriceBackgroundService>();
+builder.Services.AddHostedService<FxPriceBackgroundService>();
 
 builder.Services.AddHostedService<PriceHistoryManager>();
 
-builder.Services.AddSingleton<IPortfolioRepository>(sp =>
-{
-    var db = sp.GetRequiredService<IMongoDatabase>();
-    return new MongoPortfolioRepo(db);
-});
 builder.Services.AddScoped<PortfolioService>();
+//===================== BUILDING =================================
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
 
 //app.UseHttpsRedirection();
 
@@ -161,7 +138,7 @@ app.MapControllers();
 using (var scp = app.Services.CreateScope())
 {
     var preProcessor = scp.ServiceProvider.GetService<PreProcessor>();
-    if(preProcessor != null)
+    if (preProcessor != null)
         await preProcessor.Run();
 }
 app.Run();

@@ -1,6 +1,5 @@
-
-
 using b1.Models;
+using b1.Repositories;
 using b1.Srevices;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
@@ -9,18 +8,16 @@ namespace b1.Authentication
 {
     public class UserAuthenticator
     {
-        private IConfiguration Cfg { get; init; }
-        private UserService UsrService { get; init; }
-        private TokenProvider JTProvider { get; set; }
-        public UserAuthenticator(IConfiguration config, UserService userService, TokenProvider tokenProvider)
+        private IUserRepository _users { get; init; }
+        private TokenProvider _tokenProvider { get; set; }
+        public UserAuthenticator(TokenProvider tokenProvider,IUserRepository userRepo)
         {
-            Cfg = config;
-            UsrService = userService;
-            JTProvider = tokenProvider;
+            _users = userRepo;
+            _tokenProvider = tokenProvider;
         }
         public async Task<TokenTriplet> Handle(AuthRequest req)
         {
-            var user = await UsrService.FindByName(req.Username);
+            var user = await _users.GetUserByName(req.Username);
             if (user is null)
             {
                 throw new Exception("Bad auth request or user doesn't exist");
@@ -30,7 +27,7 @@ namespace b1.Authentication
                 Console.WriteLine($"password in auth request = [{req.Password}], hashed = [{user.Password}]");
                 throw new Exception("Bad password");
             }
-            var token = JTProvider.CreateToken(user);
+            var token = _tokenProvider.CreateToken(user);
             TokenTriplet triplet = new TokenTriplet()
             {
                 AccessToken = token,
