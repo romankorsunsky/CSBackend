@@ -5,12 +5,14 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace b1.Models
 {
+    [BsonDiscriminator(RootClass = true)]
+    [BsonKnownTypes(typeof(RegularPortfolio),typeof(AdvancedPortfolio))]
     public abstract class Portfolio
     {
 
         [BsonId]
         [BsonRepresentation(BsonType.String)]
-        public string Id;
+        public string Id { get; set; } = null!;
 
         [BsonElement]
         [NotNull]
@@ -18,7 +20,30 @@ namespace b1.Models
 
         [BsonElement]
         public string DisplayName { get; init; }
+
+        public PortfolioStatus PtfStatus { get; init; }
+        protected internal Portfolio(string username, string displayName, PortfolioStatus st = PortfolioStatus.ACTIVE)
+        {
+            OwnerUsername = username;
+            DisplayName = displayName;
+            PtfStatus = st;
+        }
+        public enum PortfolioStatus
+        {
+            ACTIVE,
+            INACTIVE
+        }
     }
-    public class RegularPortfolio : Portfolio { }
-    public class AdvancedPortfolio: Portfolio { }
+    public class RegularPortfolio : Portfolio
+    {
+        public RegularPortfolio(string username, string displayName) : base(username, displayName)
+        {
+        }
+    }
+    public class AdvancedPortfolio : Portfolio
+    {
+        public AdvancedPortfolio(string username, string displayName) : base(username, displayName)
+        {
+        }
+    }
 }

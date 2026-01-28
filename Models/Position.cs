@@ -7,7 +7,9 @@ namespace b1.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id;
+        public string Id { get; set; } = null!;
+
+        public string PortfolioId { get; set; } = null!;
         [BsonElement]
         public string AssetSymbol { get; init; } = null!;
 

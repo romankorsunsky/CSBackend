@@ -4,6 +4,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace b1.Models
 {
+    [BsonDiscriminator(RootClass = true)]
     public abstract class AssetEOD
     {
         [BsonId]
@@ -28,7 +29,7 @@ namespace b1.Models
         [BsonElement("high")]
         public double High { get; init; }
 
-        public AssetEOD(){}
+        public AssetEOD() { }
         public AssetEOD(string shortName, DateTime date, double open, double close, double low, double high)
         {
             Symbol = shortName;
