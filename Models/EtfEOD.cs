@@ -1,5 +1,3 @@
-
-
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace b1.Models

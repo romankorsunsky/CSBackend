@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Data;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Threading.Tasks;
 using b1.Main;
 using b1.Messages;
 using b1.Models;
@@ -41,7 +42,7 @@ namespace b1.Services
         internal protected abstract Task<AssetEOD> MakeEod(AssetEOD eod, string assetName);
         //one important aspect of Initialize is setting the initial value of asset prices in the PriceContext
         //it is also making sure AssetToEOD containts initial EOD values.
-        protected internal void Initialize(List<string> assetNames)
+        protected internal async Task Initialize(List<string> assetNames)
         {
             DateTime dateNow = DateTime.UtcNow;
             Dictionary<string, AssetEOD> assets = new();
@@ -55,7 +56,7 @@ namespace b1.Services
                     {
                         //the following line makes sure the PriceContext has an initial price for 
                         //future calculations
-                        PublishPrice(s, new TimedPrice(eodLast.Close, dateNow));
+                        await PublishPrice(s, new TimedPrice(eodLast.Close, dateNow));
                         assets.Add(s, eodLast);
                     }
                 }
@@ -87,7 +88,7 @@ namespace b1.Services
             //get tickers of my type
             var filter = Builders<TickerData>.Filter.Eq(ticker => ticker.TickerType, AssetType);
             var assetList = col.Find(filter).Project(ticker => ticker.Symbol).ToList();
-            Initialize(assetList);
+            await Initialize(assetList);
             var _rft = new Dictionary<string, bool>(); // ready_for_tomorrow <- indicates if we can put tomorrows EOD
             foreach (var name in assetList)
             {
@@ -166,7 +167,7 @@ namespace b1.Services
         private async Task PublishPrice(string symbol, TimedPrice tp)
         {  
             var arg = new PriceChangedMsg(symbol, tp);
-            await MsgBroker.PublishAsync<PriceChangedMsg>(arg); 
+            await MsgBroker.PublishEvent<PriceChangedMsg>(arg); 
         }
     }
 }

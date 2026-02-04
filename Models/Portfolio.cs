@@ -1,49 +1,82 @@
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace b1.Models
 {
-    [BsonDiscriminator(RootClass = true)]
-    [BsonKnownTypes(typeof(RegularPortfolio),typeof(AdvancedPortfolio))]
     public abstract class Portfolio
     {
 
         [BsonId]
-        [BsonRepresentation(BsonType.String)]
+        [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; } = null!;
 
         [BsonElement]
         [NotNull]
-        public string OwnerUsername { get; init; }
+        public string OwnerId { get; init; }
 
         [BsonElement]
         public string DisplayName { get; init; }
+        
+        [BsonElement]
+        public string PtfStatus { get; init; }
 
-        public PortfolioStatus PtfStatus { get; init; }
-        protected internal Portfolio(string username, string displayName, PortfolioStatus st = PortfolioStatus.ACTIVE)
+        [BsonElement]
+        public string PtfType { get; init; }
+        protected internal Portfolio(string ownerid,
+            string displayName,
+            string pt,
+            string st = PortfolioStatus.ACTIVE)
         {
-            OwnerUsername = username;
+            OwnerId = ownerid;
             DisplayName = displayName;
             PtfStatus = st;
+            PtfType = pt;
         }
-        public enum PortfolioStatus
+        public struct PortfolioStatus
         {
-            ACTIVE,
-            INACTIVE
+            public const string ACTIVE = "ACTIVE";
+            public const string INACTIVE = "INACTIVE";
         }
     }
+    [BsonKnownTypes(typeof(RegularPortfolio))]
     public class RegularPortfolio : Portfolio
     {
-        public RegularPortfolio(string username, string displayName) : base(username, displayName)
+        public RegularPortfolio(string ownerId, string displayName, string pt = PortfolioType.REGULAR)
+         : base(ownerId, displayName,pt)
         {
         }
     }
+    [BsonKnownTypes(typeof(AdvancedPortfolio))]
     public class AdvancedPortfolio : Portfolio
     {
-        public AdvancedPortfolio(string username, string displayName) : base(username, displayName)
+        public AdvancedPortfolio(string ownerId, string displayName, string pt = PortfolioType.ADVANCED)
+         : base(ownerId, displayName, pt)
         {
+        }
+    }
+    public class PortfolioDTO
+    {
+        public string Id { get; init; }
+        public string DisplayName { get; init; }
+        public List<PositionDTO> Positions { get; init; }
+        public string PortfolioType { get; init; }
+
+        [JsonIgnore] //just in case
+        public static Dictionary<Type, Func<object, Portfolio>> portfolioTypeMap =
+            new Dictionary<Type, Func<object, Portfolio>>();
+        public PortfolioDTO(Portfolio portfolio, List<PositionDTO> positions)
+        {
+            Id = portfolio.Id;
+            DisplayName = portfolio.DisplayName;
+            Positions = positions;
+            PortfolioType = portfolio.PtfType;
+        }
+        public override string ToString()
+        {
+            return this.ToJson();
         }
     }
 }

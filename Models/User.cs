@@ -2,6 +2,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace b1.Models
 {
@@ -25,7 +26,5 @@ namespace b1.Models
         [BsonElement("password")]
         public string Password { get; set; } = null!;
 
-        [BsonElement("portfolio")]
-        public string UserPortfolioId { get; set; } = null!;
     }
 }

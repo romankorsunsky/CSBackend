@@ -5,20 +5,15 @@ namespace b1.Repositories
 {
     public class MongoPortfolioRepo : IPortfolioRepository
     {
-        private IMongoCollection<Portfolio> PortfolioCollection { get; init; } = null!;
+        private IMongoCollection<Portfolio> _portfolioCollection { get; init; } = null!;
         public MongoPortfolioRepo(IMongoDatabase db)
         {
-            db.CreateCollection("portfolios");
-            PortfolioCollection = db.GetCollection<Portfolio>("portfolios");
+            _portfolioCollection = db.GetCollection<Portfolio>("portfolios");
         }
-        public async Task<Portfolio?> GetPortfolioByUsername(string username, string portfolioId)
+        public async Task<Portfolio?> GetPortfolioByUsernameAsync(string portfolioId)
         {
-            var results = await PortfolioCollection.FindAsync(p => p.OwnerUsername == username);
+            var results = await _portfolioCollection.FindAsync(p => p.Id == portfolioId);
             var portf = await results.FirstOrDefaultAsync();
-            if (portf is null)
-            {
-                return null;
-            }
             return portf;
         }
 
@@ -31,13 +26,18 @@ namespace b1.Repositories
         {
             try
             {
-                await PortfolioCollection.InsertOneAsync(portfolio);
+                await _portfolioCollection.InsertOneAsync(portfolio);
                 return true;
             }
             catch (MongoWriteException e)
             {
+                Console.WriteLine(e.Message);
                 return false;
             }
+        }
+        public async Task<List<Portfolio>> GetPortfoliosAsync(string userId)
+        {
+            return await _portfolioCollection.Find(p => p.OwnerId == userId).ToListAsync();
         }
     }
 }

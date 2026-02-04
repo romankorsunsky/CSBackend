@@ -19,12 +19,12 @@ namespace b1.Main
 
         public async Task PriceUpdateHandler(PriceChangedMsg e)
         {
-            await Task.Run(async () =>
+            await Task.Run(() =>
             {
                 var tp = e.TimedPr;
                 var symbol = e.Symbol;
                 if (symbol != null && tp.Price >= 0)
-                PricesForSymbol.AddOrUpdate(symbol, tp, (symbol, prev) => tp);
+                    PricesForSymbol.AddOrUpdate(symbol, tp, (symbol, prev) => tp);
             });   
         }
         public TimedPrice? GetTimedPrice(string symbol)

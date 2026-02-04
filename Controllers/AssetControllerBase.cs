@@ -10,7 +10,6 @@ using MongoDB.Driver;
 namespace b1.Controllers
 {
     [ApiController]
-    //[Route("api/v1/tickers/fx")]
     [Produces("application/json")]
     public abstract class AssetBaseController : ControllerBase
     {
@@ -31,7 +30,7 @@ namespace b1.Controllers
             var tickerNames = await _assetService.GetTickerSymbolsByType(AssetTypeName);
             if (tickerNames.Count == 0)
                 return NotFound();
-            tickerNames.Sort();
+            tickerNames.Sort(); //sorted for consistent result
             return Ok(tickerNames);
         }
 
@@ -47,6 +46,7 @@ namespace b1.Controllers
             return NotFound();
         }
 
+        [LoggingEnabled]
         [HttpGet]
         [Route("{symbol}/history")]
         public async Task<ActionResult<ChartData>> GetChartData([FromRoute] string symbol)
@@ -71,13 +71,28 @@ namespace b1.Controllers
             }
             return Ok(res);
         }
+        [HttpGet]
+        [Route("prices/{symbolCSV}")]
+        public ActionResult<List<TimedPriceWithSymbol>> GetTickersListPrices([FromRoute] string symbolCSV)
+        {
+            if (symbolCSV == null)
+                return StatusCode(StatusCodes.Status400BadRequest);
+            List<TimedPriceWithSymbol> priceList = new List<TimedPriceWithSymbol>();
+            var symbolList = symbolCSV.Split(",");
+            foreach (var s in symbolList)
+            {
+                TimedPrice? tp = _priceContext.GetTimedPrice(s);
+                if (tp == null)
+                    continue;
+                priceList.Add(new TimedPriceWithSymbol(tp.Price, tp.Date, s));
+            }
+            return priceList;
+        }       
 
-        //rewrite this, move the CSV from Route, add it as a query, or add 
         [HttpGet]
         [Route("symbols/{symbolCSV}")]
         public async Task<ActionResult<List<TickerData>>> GetTickers([FromRoute] string symbolCSV)
         {
-
             var tickerData = await _assetService.GetTickersByCSV(symbolCSV);
             if (tickerData.Count == 0)
                 return NotFound();

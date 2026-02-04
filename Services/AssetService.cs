@@ -8,37 +8,51 @@ namespace b1.Services
 {
     public class AssetService
     {
-        private ITickerRepository _tickerRepo;
+        private IMongoCollection<TickerData> _tickersCollection;
         private MongoChartsDataRepo _chartData;
         private PriceContext _pc;
-        public AssetService(ITickerRepository tickerRepo, MongoChartsDataRepo chartRepo, PriceContext pc)
+        public AssetService(IMongoDatabase db, MongoChartsDataRepo chartRepo, PriceContext pc)
         {
-            _tickerRepo = tickerRepo;
+            _tickersCollection = db.GetCollection<TickerData>("tickers");
             _chartData = chartRepo;
             _pc = pc;
         }
         public async Task<TickerData?> GetTickerBySymbol(string symbol)
         {
-            var ticker = await _tickerRepo.GetTickerBySymbol(symbol);
-            return ticker;
+            var doc = await _tickersCollection.Find(s => s.Symbol == symbol).FirstOrDefaultAsync();
+            return null;
         }
         public async Task<List<string>> GetTickerSymbolsByType(string tickerType)
         {
-            return await _tickerRepo.GetTickerSymbolsByTypeName(tickerType);
+            var lst = new List<string>();
+            var cursor = await _tickersCollection.FindAsync(t => t.TickerType == tickerType);
+            while (await cursor.MoveNextAsync())
+            {
+                var curr = cursor.Current;
+                foreach (var ticker in curr)
+                {
+                    lst.Add(ticker.Symbol);
+                }
+            }
+            return lst;
         }
 
-        public async Task<List<TickerData>> GetTickers(string symbolCSV)
+        public async Task<List<TickerData>> GetTickersByCSV(string symbolCSV)
         {
-            return await _tickerRepo.GetTickersFromCSV(symbolCSV);
+            List<string> names = symbolCSV.Split(",").ToList();
+            List<TickerData> tickerData = [];
+            if (names.Count == 0)
+                return tickerData;
+            var filter = Builders<TickerData>.Filter.In(td => td.Symbol, names);
+
+            var tickersCursor = await _tickersCollection.FindAsync(filter);
+            tickerData = await tickersCursor.ToListAsync();
+            return tickerData;
         }
         public async Task<ChartData?> GetChartData(string symbol)
         {
             return await _chartData.GetChartDataBySymbolName(symbol);
         }
-
-        public async Task<List<TickerData>> GetTickersByCSV(string symbolCSV)
-        {
-            return await _tickerRepo.GetTickersFromCSV(symbolCSV);
-        }
+        
     }
 }

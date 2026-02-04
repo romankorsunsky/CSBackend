@@ -34,18 +34,11 @@ namespace b1.Controllers
             }
             return Ok(res);
         }
-        [HttpGet]
-        [Route("hello")]
-        public ActionResult GetHello()
-        {
-            return Ok();
-        }
         
         [HttpPost]
         [Route("register")]
         public async Task<ActionResult> CreateUser([FromBody] UserRegistrationForm u)
         {   
-            Console.WriteLine("creating");
             var usr = await _usrService.CreateUser(u);
             
             if (usr == null)
@@ -55,12 +48,13 @@ namespace b1.Controllers
             return Created();
         }
 
+        [Authorize]
         [HttpGet]
-        [Route("{username}/portfolio")]
-        public async Task<ActionResult<ProfileInfo>> GetProfileByUsername([FromRoute] string username)
+        [Route("profile")]
+        public async Task<ActionResult<ProfileInfo>> GetProfile()
         {
             var principal = User;
-            var prof = await _usrService.GetProfileByUsername(username, principal);
+            var prof = await _usrService.GetProfile(principal);
             if (prof != null)
                 return Ok(prof);
             return NotFound();

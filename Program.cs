@@ -26,9 +26,9 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 builder.Services.AddAuthorization();
-builder.Host.UseDefaultServiceProvider(opts =>
+builder.Services.AddHttpLogging(logging =>
 {
-    opts.ValidateScopes = true;
+    
 });
 builder.Services.AddAuthentication(opts =>
 {
@@ -89,7 +89,7 @@ builder.Services.AddSingleton<IUserRepository>(sp =>
 });
 builder.Services.AddSingleton<IMessageChannel>(sp =>
 {
-    return new DefaultMessageChannel();
+    return DefaultMessageChannel.GetInstance();
 });
 builder.Services.AddSingleton<AssetService>();
 builder.Services.AddSingleton<PriceContext>(sp =>
@@ -97,7 +97,6 @@ builder.Services.AddSingleton<PriceContext>(sp =>
     var channel = sp.GetRequiredService<IMessageChannel>();
     return new PriceContext(channel);
 });
-builder.Services.AddSingleton<ITickerRepository,MongoTickerRepo>();
 builder.Services.AddScoped<TokenProvider>();
 builder.Services.AddScoped<UserAuthenticator>();
 builder.Services.AddScoped<PreProcessor>();
@@ -125,6 +124,7 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
+    //app.UseHttpLogging(); //this is global logging, it logs too much, sometimes I want my own logger
     app.MapOpenApi();
 }
 
@@ -134,7 +134,7 @@ if (app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-//properly start the PreProcessor
+
 using (var scp = app.Services.CreateScope())
 {
     var preProcessor = scp.ServiceProvider.GetService<PreProcessor>();

@@ -1,15 +1,18 @@
+using System.Security.Claims;
 using System.Security.Principal;
 using System.Threading.Tasks;
+using b1.Main;
 using b1.Models;
 using b1.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 
 namespace b1.Controllers
 {
     [Authorize]
     [ApiController]
-    [Route("api/v1/portfolio")]
+    [Route("api/v1/portfolios")]
     [Produces("application/json")]
     public class PortfolioController : ControllerBase
     {
@@ -31,37 +34,36 @@ namespace b1.Controllers
             }
             return Ok(portfolioIds);
         }
-        [HttpPost]
-        [Route("regular")]
-        public async Task<ActionResult> CreateRegularPortfolio([FromBody]RegularPortfolioCreationRequest req)
+        [LoggingEnabled]
+        [HttpGet]
+        public async Task<ActionResult<List<PortfolioDTO>>> GetPortfolios()
         {
-            //portfolios are crated rarely, so performance of true/false result vs try/catch for business logic 
-            //is ngeligible ? negligable ? 
-            var principal = User;
-            try
-            {
-                await _portfolioServ.CreatePortfolio(req, principal);
-            }
-            catch
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
-            return Ok();
+            var portfolios = await _portfolioServ.GetPortfoliosForUserAsync(User);
+            return Ok(portfolios);
         }
+
+        [CaptureErrors]
+        [LoggingEnabled]
         [HttpPost]
-        [Route("advanced")]
-        public async Task<ActionResult> CreateAdvancedPortfolio([FromBody] AdvancedPortfolioCreationRequest req)
+        public async Task<ActionResult<PortfolioDTO>> CreatePortfolio([FromBody] PortfolioCreationRequest req)
         {
             var principal = User;
+            string? ptfId;
+            PortfolioDTO? dto = null;
             try
             {
-                await _portfolioServ.CreatePortfolio(req, principal);
+                ptfId = await _portfolioServ.CreatePortfolio(req, principal);
+                if (ptfId == null)
+                {
+                    return NotFound();
+                }
+                dto = await _portfolioServ.GetPortfolioById(ptfId);
             }
             catch
             {
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
-            return Ok();
+            return Ok(dto);
         }
     }
 }

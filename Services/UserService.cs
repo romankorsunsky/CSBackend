@@ -29,7 +29,6 @@ namespace b1.Srevices
 
         public async Task<User?> CreateUser(UserRegistrationForm u)
         {
-            Console.WriteLine("Registering the user" + u.ToString());
             bool valid = await isValidUser(u);
             if (!valid)
             {
@@ -60,28 +59,20 @@ namespace b1.Srevices
             return true;
         }
 
-        public async Task<User?> FindByName(string name)
+        public async Task<User?> FindByUserId(string userId)
         {
-            return await _users.Find(name).FirstOrDefaultAsync();
+            return await _users.Find(u => u.Id == userId).FirstOrDefaultAsync();
         }
-        /*
-        * In theory @param:username not needed, we can just look inside the Claims and find the 'sub'
-        * But we assume maybe some admin will have a dashboard and the checking logic will change
-        * Maybe we will add a claim of 'CanRequestOtherUserProfiles' in the future.
-        */
-        public async Task<ProfileInfo?> GetProfileByUsername(string username, ClaimsPrincipal principal)
+        
+        public async Task<ProfileInfo?> GetProfile(ClaimsPrincipal principal)
         {
-            var clm = principal.FindFirst("sub")?.Value;
-            var usr = await FindByName(username);
-            if (clm == null || usr == null)
-            {
-                //if somehow the attached token had no 'sub' claim and we are past [Authorized], we got a problem
+            var usernameClaim = principal.FindFirst("sub");
+            if (usernameClaim == null)
                 return null;
-            }
-            if (clm != usr.Username)
-            {
+            var username = usernameClaim.Value;
+            var usr = await FindByUserId(username);
+            if (usr == null)
                 return null;
-            }
             var prof = new ProfileInfo()
             {
                 Email = usr.Email,

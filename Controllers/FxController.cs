@@ -13,7 +13,7 @@ namespace b1.Controllers
     [Route("api/v1/tickers/fx")]
     public class FxController : AssetBaseController
     {
-        protected override string AssetTypeName { get => "etf"; }
+        protected override string AssetTypeName { get => "fx"; }
         public FxController(IMongoDatabase dbInstance, PriceContext ctx,AssetService assetService):
             base(dbInstance,ctx,assetService)
         {

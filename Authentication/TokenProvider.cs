@@ -31,7 +31,7 @@ namespace b1.Authentication
                 Audience = Cfg.Value.Audience,
                 Subject = new ClaimsIdentity(
                     [
-                        new Claim(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Sub,user.Username)
+                        new Claim(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Sub,user.Id)
                     ]
                 ),
                 Expires = DateTime.UtcNow.AddMinutes(Cfg.Value.ExpirationTime),

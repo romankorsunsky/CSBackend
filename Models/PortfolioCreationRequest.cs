@@ -1,29 +1,23 @@
+using Microsoft.OpenApi.Extensions;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace b1.Models
 {
-    public abstract class PortfolioCreationRequest
+    public class PortfolioCreationRequest
     {
-        [BsonId]
-        public string Id { get; set; } = null!;
-        [BsonElement]
         public string DisplayName { get; set; }
-        [BsonElement]
-        public List<Position> Positions { get; set; }
-        [BsonElement]
-        public PortfolioType PtfType { get; set; }
-        public bool Processed { get; set; }
-        public PortfolioCreationRequest(string displayName, PortfolioType ptfType, bool processed = false)
+
+        public string PtfType { get; set; }
+        public PortfolioCreationRequest(string displayName, string ptfType)
         {
             DisplayName = displayName;
-            Positions = new();
-            Processed = processed;
             PtfType = ptfType;
         }
-        public enum PortfolioType
-        {
-            REGULAR,
-            ADVANCED
-        }
+    }
+    //this is not elegant, the alternative was separate classes and different endpoints for each type, which sounded even worse
+    public struct PortfolioType
+    {
+        public const string REGULAR = "REGULAR";
+        public const string ADVANCED = "ADVANCED";
     }
 }

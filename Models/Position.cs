@@ -22,17 +22,43 @@ namespace b1.Models
         [BsonElement]
         public double InitialPrice { get; init; }
 
-        [BsonRepresentation(BsonType.String)]
         [BsonElement]
-        public Direction PositionType { get; init; }
+        public string PositionType { get; init; }
 
         [BsonElement]
         public bool Closed { get; init; }
+
+        public Position(string portfolioId, string assetSymbol, long qtty, DateTime openedAt, double initPrice, string posType)
+        {
+            Closed = false;
+            PortfolioId = portfolioId;
+            AssetSymbol = assetSymbol;
+            Quantity = qtty;
+            OpenedAt = openedAt;
+            InitialPrice = initPrice;
+            PositionType = posType;
+        }
     }
-    public enum Direction
+    public struct Direction
     {
-        LONG,
-        SHORT
+        public const string LONG = "LONG";
+        public const string SHORT = "SHORT";
+    }
+    public class PositionDTO
+    {
+        public string Id { get; set; }
+        public string PositionType { get; set; }
+        public double InitialPrice { get; set; }
+        public long Quantity { get; set; }
+        public string Symbol { get; set; }
+        public PositionDTO(Position position)
+        {
+            Id = position.Id;
+            PositionType = position.PositionType;
+            InitialPrice = position.InitialPrice;
+            Quantity = position.Quantity;
+            Symbol = position.AssetSymbol;
+        }
     }
 }
 
