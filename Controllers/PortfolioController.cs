@@ -34,7 +34,7 @@ namespace b1.Controllers
             }
             return Ok(portfolioIds);
         }
-        [LoggingEnabled]
+        //[LoggingEnabled]
         [HttpGet]
         public async Task<ActionResult<List<PortfolioDTO>>> GetPortfolios()
         {
@@ -42,8 +42,8 @@ namespace b1.Controllers
             return Ok(portfolios);
         }
 
-        [CaptureErrors]
-        [LoggingEnabled]
+        //[CaptureErrors]
+        //[LoggingEnabled]
         [HttpPost]
         public async Task<ActionResult<PortfolioDTO>> CreatePortfolio([FromBody] PortfolioCreationRequest req)
         {

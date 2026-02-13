@@ -8,7 +8,7 @@ namespace b1.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public ObjectId Id;
+        public string Id;
 
         public string Symbol { get; set; } = null!;
 
@@ -18,8 +18,6 @@ namespace b1.Models
 
         public string TickerType { get; set; } = null!;
 
-
-        public TickerData() { }
         public TickerData(TickerBaseData baseData, string type)
         {
             Description = (baseData.Description == null || baseData.Description == "") ? "N/A" : baseData.Description;
@@ -27,11 +25,6 @@ namespace b1.Models
             LongName = baseData.LongName ?? throw new ArgumentException("Bad Ticker Info");
             TickerType = type;
 
-        }
-
-        public override string ToString()
-        {
-            return $"TickerData: [Symbol:{Symbol};LongName:{LongName};Description:{Description};Type:{TickerType}]";
         }
     }
 }

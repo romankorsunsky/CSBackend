@@ -37,7 +37,7 @@ namespace b1.Services
             //find all positions belonging to the portfolio's the user has
             var positionFilter = Builders<Position>.Filter.In(pos => pos.PortfolioId, portfolioIds);
             var cursor = await _positions.FindAsync(positionFilter); //cursor of ALL positions belonging to the user
-            var dict = new Dictionary<string, List<PositionDTO>>();
+            var dict = portfolioIds.ToDictionary(s => s, s => new List<PositionDTO>());
             //there may be a lot of positions so let's use cursor and group positions by their owning portfolio
             while (await cursor.MoveNextAsync())
             {
@@ -77,14 +77,7 @@ namespace b1.Services
             }
             return idList;
         }
-        public async Task AddPosition(string portfolioId, Position position)
-        {
-
-        }
-        public async Task ClosePosition(string positionId)
-        {
-
-        }
+    
         /// <summary>
         /// Attempts to create a portfolio, and insert it into the repository.
         /// On success returns the Id of the new Portfolio.
@@ -102,10 +95,10 @@ namespace b1.Services
             Portfolio? ptf = null;
             switch (portfRequest.PtfType)
             {
-                case PortfolioType.REGULAR:
+                case "REGULAR":
                     ptf = new RegularPortfolio(ownerId, portfRequest.DisplayName);
                     break;
-                case PortfolioType.ADVANCED:
+                case "ADVANCED":
                     ptf = new AdvancedPortfolio(ownerId, portfRequest.DisplayName);
                     break;
             }

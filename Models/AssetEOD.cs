@@ -8,7 +8,7 @@ namespace b1.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public ObjectId Id;
+        public string Id;
 
         [BsonElement("symbol")]
         public string? Symbol { get; init; }

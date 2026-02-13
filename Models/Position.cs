@@ -39,7 +39,7 @@ namespace b1.Models
             PositionType = posType;
         }
     }
-    public struct Direction
+    public struct PositionDirection
     {
         public const string LONG = "LONG";
         public const string SHORT = "SHORT";
@@ -47,10 +47,11 @@ namespace b1.Models
     public class PositionDTO
     {
         public string Id { get; set; }
+        public string Symbol { get; set; }
         public string PositionType { get; set; }
         public double InitialPrice { get; set; }
         public long Quantity { get; set; }
-        public string Symbol { get; set; }
+
         public PositionDTO(Position position)
         {
             Id = position.Id;
@@ -59,6 +60,15 @@ namespace b1.Models
             Quantity = position.Quantity;
             Symbol = position.AssetSymbol;
         }
+    }
+
+    public class PositionCreationRequest
+    {
+        public string Id { get; set; }
+        public string Symbol { get; set; }
+        public string PositionType { get; set; }
+        public double InitialPrice { get; set; }
+        public long Quantity { get; set; }
     }
 }
 

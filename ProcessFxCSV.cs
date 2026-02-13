@@ -38,10 +38,11 @@ namespace b1.Main
                 {
                     throw new Exception("Failed to process entry in JSON file: " + jsonStr);
                 }
-                if (baseData.Name != null)
+                if (baseData.Name == null)
                 {
-                    chartData = new ChartData(baseData.Name);
+                    throw new Exception("Failed to process FxCSV");
                 }
+                chartData = new ChartData(baseData.Name);
             }
             catch (Exception e)
             {

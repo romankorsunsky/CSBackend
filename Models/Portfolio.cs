@@ -19,42 +19,51 @@ namespace b1.Models
 
         [BsonElement]
         public string DisplayName { get; init; }
-        
+
         [BsonElement]
         public string PtfStatus { get; init; }
 
-        [BsonElement]
-        public string PtfType { get; init; }
         protected internal Portfolio(string ownerid,
             string displayName,
-            string pt,
             string st = PortfolioStatus.ACTIVE)
         {
             OwnerId = ownerid;
             DisplayName = displayName;
             PtfStatus = st;
-            PtfType = pt;
         }
         public struct PortfolioStatus
         {
             public const string ACTIVE = "ACTIVE";
             public const string INACTIVE = "INACTIVE";
         }
+
+        public abstract string PortfolioType();
     }
+    
     [BsonKnownTypes(typeof(RegularPortfolio))]
     public class RegularPortfolio : Portfolio
     {
-        public RegularPortfolio(string ownerId, string displayName, string pt = PortfolioType.REGULAR)
-         : base(ownerId, displayName,pt)
+        public RegularPortfolio(string ownerId, string displayName)
+         : base(ownerId, displayName)
         {
+        }
+
+        public override string PortfolioType()
+        {
+            return "REGULAR";
         }
     }
     [BsonKnownTypes(typeof(AdvancedPortfolio))]
     public class AdvancedPortfolio : Portfolio
     {
-        public AdvancedPortfolio(string ownerId, string displayName, string pt = PortfolioType.ADVANCED)
-         : base(ownerId, displayName, pt)
+        public AdvancedPortfolio(string ownerId, string displayName)
+         : base(ownerId, displayName)
         {
+        }
+
+        public override string PortfolioType()
+        {
+            return "ADVANCED";
         }
     }
     public class PortfolioDTO
@@ -72,7 +81,7 @@ namespace b1.Models
             Id = portfolio.Id;
             DisplayName = portfolio.DisplayName;
             Positions = positions;
-            PortfolioType = portfolio.PtfType;
+            PortfolioType = portfolio.PortfolioType();
         }
         public override string ToString()
         {

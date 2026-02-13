@@ -25,6 +25,9 @@ namespace b1.Models
 
         [BsonElement("password")]
         public string Password { get; set; } = null!;
-
+        
+        [BsonDefaultValue(500)]
+        [BsonElement("balance")]
+        public double Balance { get; set; } 
     }
 }

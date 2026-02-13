@@ -24,7 +24,6 @@ namespace b1.Authentication
             }
             if (!BC.Verify(req.Password, user.Password,true))
             {
-                Console.WriteLine($"password in auth request = [{req.Password}], hashed = [{user.Password}]");
                 throw new Exception("Bad password");
             }
             var token = _tokenProvider.CreateToken(user);
@@ -34,7 +33,6 @@ namespace b1.Authentication
                 IdToken = "dummy",
                 RefreshToken = "dummy"
             };
-            Console.WriteLine("Handle issued AccessToken: " + token);
             return triplet;
         }
     }

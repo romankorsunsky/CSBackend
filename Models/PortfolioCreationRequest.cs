@@ -14,10 +14,4 @@ namespace b1.Models
             PtfType = ptfType;
         }
     }
-    //this is not elegant, the alternative was separate classes and different endpoints for each type, which sounded even worse
-    public struct PortfolioType
-    {
-        public const string REGULAR = "REGULAR";
-        public const string ADVANCED = "ADVANCED";
-    }
 }

@@ -14,6 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.IdentityModel.JsonWebTokens;
 using b1.Models;
+using b1;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -22,6 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 //===================== CONFIGURATIONS =================================
 JsonWebTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
@@ -59,7 +61,10 @@ builder.Services.AddAuthentication(opts =>
 });
 builder.Services.Configure<MongoSettings>(
     builder.Configuration.GetSection("MongoSettings"));
-
+    
+builder.Services.Configure<SignatureSettings>(
+    builder.Configuration.GetSection("SignatureSettings")
+);
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
 
@@ -70,9 +75,18 @@ builder.Services.AddSingleton<IMongoClient>(sp =>
     return service;
 
 });
-//===================== SERVICES =================================
+//****************************************************************
+//===================== FILTERS  =================================
 
+//==================== END FILTERS ===============================
+
+
+//===================== SERVICES =================================
 //added the MongoDB instance to inject
+builder.Services.AddSingleton<InMemoryPositionCreationRequestStore>(sp =>
+{
+    return InMemoryPositionCreationRequestStore.GetInstance();
+});
 builder.Services.AddSingleton<IMongoDatabase>(sp =>
 {
     var settings = sp.GetRequiredService<IOptions<MongoSettings>>().Value;
@@ -91,6 +105,7 @@ builder.Services.AddSingleton<IMessageChannel>(sp =>
 {
     return DefaultMessageChannel.GetInstance();
 });
+
 builder.Services.AddSingleton<AssetService>();
 builder.Services.AddSingleton<PriceContext>(sp =>
 {
@@ -109,7 +124,13 @@ builder.Services.AddSingleton<PriceHistoryManager>(sp =>
     
     return new PriceHistoryManager(ctx, db);
 });
-
+builder.Services.AddScoped<PositionService>(sp =>
+{
+    var db = sp.GetRequiredService<IMongoDatabase>();
+    var usrRepo = sp.GetRequiredService<IUserRepository>();
+    var pc = sp.GetRequiredService<PriceContext>();
+    return new PositionService(db, usrRepo, pc);
+});
 builder.Services.AddScoped<UserService>();
 
 builder.Services.AddHostedService<StockPriceBackgroundService>();
