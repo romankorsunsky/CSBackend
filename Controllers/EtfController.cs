@@ -12,8 +12,8 @@ namespace b1.Controllers
     public class EtfController : AssetBaseController
     {
         protected override string AssetTypeName { get => "etf"; }
-        public EtfController(IMongoDatabase dbInstance, PriceContext ctx,AssetService assetService):
-            base(dbInstance,ctx,assetService)
+        public EtfController(PriceContext ctx,AssetService assetService):
+            base(ctx,assetService)
         {
            
         }

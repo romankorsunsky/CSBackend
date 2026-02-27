@@ -14,8 +14,8 @@ namespace b1.Controllers
     public class FxController : AssetBaseController
     {
         protected override string AssetTypeName { get => "fx"; }
-        public FxController(IMongoDatabase dbInstance, PriceContext ctx,AssetService assetService):
-            base(dbInstance,ctx,assetService)
+        public FxController(PriceContext ctx,AssetService assetService):
+            base(ctx,assetService)
         {
            
         }

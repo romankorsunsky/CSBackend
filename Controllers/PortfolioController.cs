@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Security.Principal;
 using System.Threading.Tasks;
+using b1.DTOs;
 using b1.Main;
 using b1.Models;
 using b1.Services;
@@ -34,7 +35,7 @@ namespace b1.Controllers
             }
             return Ok(portfolioIds);
         }
-        //[LoggingEnabled]
+        
         [HttpGet]
         public async Task<ActionResult<List<PortfolioDTO>>> GetPortfolios()
         {
@@ -42,8 +43,6 @@ namespace b1.Controllers
             return Ok(portfolios);
         }
 
-        //[CaptureErrors]
-        //[LoggingEnabled]
         [HttpPost]
         public async Task<ActionResult<PortfolioDTO>> CreatePortfolio([FromBody] PortfolioCreationRequest req)
         {

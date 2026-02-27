@@ -2,9 +2,8 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Diagnostics.Tracing;
 using b1.Messages;
-using ScottPlot.Plottables;
 
-namespace b1.Main
+namespace b1.Infrastructure
 {
     public class DefaultMessageChannel : IMessageChannel
     {
@@ -24,6 +23,10 @@ namespace b1.Main
         }
         public Task PublishEvent<TMessage>(TMessage e)
         {
+            if (e is null)
+            {
+                throw new Exception("Message is null");
+            }
             if (_eventHandlers.TryGetValue(typeof(TMessage), out var handlers))
             {
                 lock (handlers)

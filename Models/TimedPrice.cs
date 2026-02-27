@@ -11,6 +11,7 @@ namespace b1.Models
         [BsonElement("date")]
         public DateTime Date { get; init; } = default;
 
+        
         public TimedPrice() { }
         public TimedPrice(double price, DateTime date)
         {
@@ -20,7 +21,6 @@ namespace b1.Models
     }
     public class TimedPriceWithSymbol : TimedPrice
     {
-        [BsonElement]
         public string Symbol { get; set; }
         public TimedPriceWithSymbol(double price, DateTime date, string symbol)
             : base(price, date)

@@ -23,6 +23,7 @@ namespace b1.Models
         [BsonElement]
         public string PtfStatus { get; init; }
 
+        public abstract string PortfolioType { get;}
         protected internal Portfolio(string ownerid,
             string displayName,
             string st = PortfolioStatus.ACTIVE)
@@ -36,8 +37,6 @@ namespace b1.Models
             public const string ACTIVE = "ACTIVE";
             public const string INACTIVE = "INACTIVE";
         }
-
-        public abstract string PortfolioType();
     }
     
     [BsonKnownTypes(typeof(RegularPortfolio))]
@@ -48,9 +47,9 @@ namespace b1.Models
         {
         }
 
-        public override string PortfolioType()
+        public override string PortfolioType
         {
-            return "REGULAR";
+            get => "REGULAR";
         }
     }
     [BsonKnownTypes(typeof(AdvancedPortfolio))]
@@ -61,31 +60,9 @@ namespace b1.Models
         {
         }
 
-        public override string PortfolioType()
+        public override string PortfolioType
         {
-            return "ADVANCED";
-        }
-    }
-    public class PortfolioDTO
-    {
-        public string Id { get; init; }
-        public string DisplayName { get; init; }
-        public List<PositionDTO> Positions { get; init; }
-        public string PortfolioType { get; init; }
-
-        [JsonIgnore] //just in case
-        public static Dictionary<Type, Func<object, Portfolio>> portfolioTypeMap =
-            new Dictionary<Type, Func<object, Portfolio>>();
-        public PortfolioDTO(Portfolio portfolio, List<PositionDTO> positions)
-        {
-            Id = portfolio.Id;
-            DisplayName = portfolio.DisplayName;
-            Positions = positions;
-            PortfolioType = portfolio.PortfolioType();
-        }
-        public override string ToString()
-        {
-            return this.ToJson();
+            get => "ADVANCED";
         }
     }
 }

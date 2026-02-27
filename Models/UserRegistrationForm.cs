@@ -25,7 +25,8 @@ namespace b1.Models
                 Email = form.Email,
                 Password = BC.EnhancedHashPassword(form.Password),
                 Fname = form.FirstName,
-                Lname = form.LastName
+                Lname = form.LastName,
+                Balance = 1000.0
             };
         }
         public override string ToString()

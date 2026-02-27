@@ -1,6 +1,10 @@
 
+using System.Text.Json.Serialization;
 using b1.Models;
+using b1.Services;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace b1.Controllers
 {
@@ -9,14 +13,33 @@ namespace b1.Controllers
     [Produces("application/json")]
     public class NewsController : ControllerBase
     {
-        private static IList<string> ArticleNames { get; } = new List<string>()
+        private NewsService _newsService;
+        public NewsController(NewsService ns)
         {
-            "Good News", "Bad News", "Average News"
-        };
-        //here we will add a news service I will decide if it will be read from regular files or 
-        //I will hafve to make a collection or something we will see.
-        
+            _newsService = ns;
+        }
+        [HttpGet]
+        [Route("")]
+        public async Task<ActionResult<List<NewsItem>>> GetNews()
+        {
+            var lst = await _newsService.GetNews();
+            return Ok(lst);
+        }
     }
 
-    
+    public class NewsItem
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; } = null!;
+
+        [BsonElement("title")]
+        public string Title { get; set; } = null!;
+
+        [BsonElement("content")]
+        public string Content { get; set; } = null!;
+
+        [BsonElement("date")]
+        public DateTime Date { get; set; }
+    }
 }

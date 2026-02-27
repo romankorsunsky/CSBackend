@@ -1,18 +1,17 @@
 using System.Security.Claims;
+using b1.DTOs;
 using b1.Models;
 using b1.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.AspNetCore.Mvc.Formatters;
+
 
 namespace b1.Controllers
 {
     [ApiController]
-    [Route("api/v1/portfolio")]
+    [Route("api/v1/portfolios")]
     [Produces("application/json")]
-    //[Authorize]
+    [Authorize]
     public class PositionController : ControllerBase
     {
         private PositionService _posServ;
@@ -21,70 +20,53 @@ namespace b1.Controllers
             _posServ = posServ;
         }
 
-        
-        [LoggingEnabled]
         [Route("{id}/position-request")]
         [HttpPost]
-        public async Task<ActionResult<PositionVerification>> AddPositionRequest(PositionCreationRequest request)
+        public async Task<ActionResult<PositionVerificationDTO>> AddPositionRequest(
+            [FromBody] PositionCreationRequest request,
+            [FromRoute] string id)
         {
-            PositionVerification? confirmation = await _posServ.VerifyPosition(request, User);
-            if (confirmation == null)
+            OpenPositionResult result = await _posServ.RequestToOpenPosition(request, User, id);
+            if (result.Problem != null)
             {
-                return StatusCode(StatusCodes.Status403Forbidden);
+                return StatusCode(StatusCodes.Status403Forbidden,result.Problem);
             }
-            return Ok(confirmation);
+            var posVer = result.PosRef;
+            if (posVer == null)
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            return Ok(new PositionVerificationDTO(posVer));
         }
-        [HttpGet]
-        [Route("getok")]
-        public ActionResult GetOk()
-        {
-            return Ok();
-        }
-
-        
         [LoggingEnabled]
-        [Route("get-confirmation")]
-        [HttpGet]
-        public async Task<ActionResult<PositionVerification>> TestHandler()
-        {
-            var verification = new PositionVerification("AAPL", 123, 123.1, DateTime.UtcNow.ToString());
-            return Ok(verification);
-        }
-
-        [LoggingEnabled]
-        
         [HttpPost]
-        [Route("positionconfirmation")]
-        public async Task<ActionResult> AddPosition(PositionVerification posConf)
+        [Route("{id}/position-confirmation")]
+        public async Task<ActionResult> AddPosition([FromBody] PositionConfirmation posConf,
+            [FromRoute] string id)
         {
-            return Ok();
+            if (posConf.Confirmed == false)
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            PositionDTO? posDTO = await _posServ.OpenPositionFinalize(posConf.VerificationId,User);
+            return Ok(posDTO);
         }
 
-    }
-    public class PositionVerification
-    {
-        public string Id;
-        public string Symbol { get; set; } = null!;
-        public long Quantity { get; set; }
-        public double Price { get; set; }
-        public string TimeIssued { get; set; } = null!;
-
-        public PositionVerification(string symbol, long quantity, double price, string timeIssued)
+        [LoggingEnabled]
+        [HttpPost]
+        [Route("{ptfId}/position-close/{posId}")]
+        public async Task<ActionResult> ClosePosition([FromRoute] string ptfId,
+            [FromRoute] string posId)
         {
-            Symbol = symbol;
-            Quantity = quantity;
-            Price = price;
-            TimeIssued = timeIssued;
-        }
-    }
-    public class PositionConfirmation
-    {
-        public PositionVerification Verification { get; set; } = null!;
-        public bool Decision { get; set; }
-
-        public PositionConfirmation(PositionVerification verification, bool decision) {
-            Verification = verification;
-            Decision = decision;
+            try
+            {
+                var res = await _posServ.ClosePositionAsync(ptfId,posId, User);
+                if (res == null)
+                    return StatusCode(StatusCodes.Status412PreconditionFailed);
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using b1.Infrastructure;
 using b1.Messages;
 using b1.Models;
 using MongoDB.Bson;

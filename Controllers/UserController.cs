@@ -34,13 +34,13 @@ namespace b1.Controllers
             }
             return Ok(res);
         }
-        
+
         [HttpPost]
         [Route("register")]
         public async Task<ActionResult> CreateUser([FromBody] UserRegistrationForm u)
-        {   
+        {
             var usr = await _usrService.CreateUser(u);
-            
+
             if (usr == null)
             {
                 return StatusCode(StatusCodes.Status422UnprocessableEntity);
@@ -51,7 +51,7 @@ namespace b1.Controllers
         [Authorize]
         [HttpGet]
         [Route("profile")]
-        public async Task<ActionResult<ProfileInfo>> GetProfile()
+        public async Task<ActionResult<ProfileInfoDTO>> GetProfile()
         {
             var principal = User;
             var prof = await _usrService.GetProfile(principal);

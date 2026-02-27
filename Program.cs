@@ -15,6 +15,12 @@ using System.Text;
 using Microsoft.IdentityModel.JsonWebTokens;
 using b1.Models;
 using b1;
+using b1.Respositories;
+using System.Windows.Input;
+using b1.Repositoris;
+using b1.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Formatters;
+using System.Diagnostics;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -30,7 +36,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddAuthorization();
 builder.Services.AddHttpLogging(logging =>
 {
-    
+    logging.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.RequestBody;
 });
 builder.Services.AddAuthentication(opts =>
 {
@@ -61,10 +67,7 @@ builder.Services.AddAuthentication(opts =>
 });
 builder.Services.Configure<MongoSettings>(
     builder.Configuration.GetSection("MongoSettings"));
-    
-builder.Services.Configure<SignatureSettings>(
-    builder.Configuration.GetSection("SignatureSettings")
-);
+
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
 
@@ -83,9 +86,9 @@ builder.Services.AddSingleton<IMongoClient>(sp =>
 
 //===================== SERVICES =================================
 //added the MongoDB instance to inject
-builder.Services.AddSingleton<InMemoryPositionCreationRequestStore>(sp =>
+builder.Services.AddSingleton<IPositionVerificationRepository>(sp =>
 {
-    return InMemoryPositionCreationRequestStore.GetInstance();
+    return InMemoryPositionVerificationRepo.GetInstance();
 });
 builder.Services.AddSingleton<IMongoDatabase>(sp =>
 {
@@ -94,18 +97,27 @@ builder.Services.AddSingleton<IMongoDatabase>(sp =>
     return client.GetDatabase(settings.DatabaseName);
 
 });
-builder.Services.AddSingleton<MongoChartsDataRepo>();
 //builder.Services.AddSingleton<InMemoryCache>();
 builder.Services.AddSingleton<IUserRepository>(sp =>
 {
     var db = sp.GetRequiredService<IMongoDatabase>();
     return new MongoUserRepository(db);
 });
+builder.Services.AddSingleton<IChartDataRepository, MongoChartsDataRepo>();
+builder.Services.AddSingleton<IPositionRepository, MongoPositionRepo>();
+builder.Services.AddSingleton<ITickerRepository, MongoTickerRepo>();
+builder.Services.AddSingleton<ICommandRepository, MongoCommandRepo>();
+builder.Services.AddSingleton<IPortfolioRepository, MongoPortfolioRepo>();
+
 builder.Services.AddSingleton<IMessageChannel>(sp =>
 {
     return DefaultMessageChannel.GetInstance();
 });
+builder.Services.AddSingleton<ICommandChannel, DefaultCommandChannel>();
+builder.Services.AddSingleton<IReadOnlyNewsRepository, MongoReadonlyNewsRepo>();
 
+builder.Services.AddSingleton<RegularPositionCommandProvider>();
+builder.Services.AddSingleton<AdvancedPositionCommandProvider>();
 builder.Services.AddSingleton<AssetService>();
 builder.Services.AddSingleton<PriceContext>(sp =>
 {
@@ -115,24 +127,31 @@ builder.Services.AddSingleton<PriceContext>(sp =>
 builder.Services.AddScoped<TokenProvider>();
 builder.Services.AddScoped<UserAuthenticator>();
 builder.Services.AddScoped<PreProcessor>();
-
+builder.Services.AddScoped<NewsService>();
 // services responsible for putting the prices in their respective historical location
 builder.Services.AddSingleton<PriceHistoryManager>(sp =>
 {
     var db = sp.GetRequiredService<IMongoDatabase>(); //singleton
     var ctx = sp.GetRequiredService<PriceContext>(); //singleton
-    
+
     return new PriceHistoryManager(ctx, db);
 });
+builder.Services.AddScoped<RegularCommandCreator>();
+builder.Services.AddScoped<AdvancedCommandCreator>();
+
 builder.Services.AddScoped<PositionService>(sp =>
 {
-    var db = sp.GetRequiredService<IMongoDatabase>();
+    var posVerRepo = sp.GetRequiredService<IPositionVerificationRepository>();
+    var ptfRepo = sp.GetRequiredService<IPortfolioRepository>();
+    var posRepo = sp.GetRequiredService<IPositionRepository>();
     var usrRepo = sp.GetRequiredService<IUserRepository>();
     var pc = sp.GetRequiredService<PriceContext>();
-    return new PositionService(db, usrRepo, pc);
+    var cmdRepo = sp.GetRequiredService<ICommandRepository>();
+    var cmdChan = sp.GetRequiredService<ICommandChannel>();
+    return new PositionService(posRepo, ptfRepo, usrRepo, pc, sp, cmdRepo, posVerRepo, cmdChan);
 });
 builder.Services.AddScoped<UserService>();
-
+builder.Services.AddScoped<ReportService>();
 builder.Services.AddHostedService<StockPriceBackgroundService>();
 builder.Services.AddHostedService<EtfPriceBackgroundService>();
 builder.Services.AddHostedService<FxPriceBackgroundService>();
@@ -149,15 +168,23 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-
-//app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+//pre processing steps or setup for buses etc.
 using (var scp = app.Services.CreateScope())
 {
+    var newsCommandExecutror = new Process()
+    {
+        StartInfo ={
+            FileName = "/usr/bin/python3",
+            Arguments = "/Users/korsunskyroma/b1/news.py"
+        }
+    };
+    newsCommandExecutror.Start();
+    var regularProvider = scp.ServiceProvider.GetRequiredService<RegularPositionCommandProvider>();
+    var advancedProvider = scp.ServiceProvider.GetRequiredService<AdvancedPositionCommandProvider>();
     var preProcessor = scp.ServiceProvider.GetService<PreProcessor>();
     if (preProcessor != null)
         await preProcessor.Run();

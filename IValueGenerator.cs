@@ -1,5 +1,3 @@
-
-
 namespace b1.Main
 {
     public interface IValueGenerator

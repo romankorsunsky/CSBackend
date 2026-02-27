@@ -15,19 +15,17 @@ namespace b1.Controllers
     {
         private PriceContext _priceContext;
         private AssetService _assetService;
-        private IMongoDatabase _db { get; init; }
         protected abstract string AssetTypeName { get;}
-        public AssetBaseController(IMongoDatabase dbInstance, PriceContext ctx,AssetService assetService)
+        public AssetBaseController(PriceContext ctx,AssetService assetService)
         {
             _assetService = assetService;
-            _db = dbInstance;
             _priceContext = ctx;
         }
         [HttpGet]
         [Route("symbolnames")]
         public async Task<ActionResult<IList<string>>> GetTickerNames()
         {
-            var tickerNames = await _assetService.GetTickerSymbolsByType(AssetTypeName);
+            var tickerNames = await _assetService.GetSymbolsByType(AssetTypeName);
             if (tickerNames.Count == 0)
                 return NotFound();
             tickerNames.Sort(); //sorted for consistent result
@@ -46,7 +44,6 @@ namespace b1.Controllers
             return NotFound();
         }
 
-        [LoggingEnabled]
         [HttpGet]
         [Route("{symbol}/history")]
         public async Task<ActionResult<ChartData>> GetChartData([FromRoute] string symbol)

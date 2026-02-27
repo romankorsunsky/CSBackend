@@ -1,17 +1,9 @@
-
-
-using System.Collections.Concurrent;
-using System.Data;
-using System.Diagnostics;
-using System.Diagnostics.Metrics;
-using System.Threading.Tasks;
+using b1.Infrastructure;
 using b1.Main;
 using b1.Messages;
 using b1.Models;
 using b1.Services;
 using MathNet.Numerics.Distributions;
-using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace b1.Services

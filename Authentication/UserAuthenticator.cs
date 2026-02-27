@@ -17,7 +17,7 @@ namespace b1.Authentication
         }
         public async Task<TokenTriplet> Handle(AuthRequest req)
         {
-            var user = await _users.GetUserByName(req.Username);
+            var user = await _users.GetUserByUsername(req.Username);
             if (user is null)
             {
                 throw new Exception("Bad auth request or user doesn't exist");

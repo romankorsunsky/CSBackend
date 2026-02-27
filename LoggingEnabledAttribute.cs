@@ -7,13 +7,7 @@ using MongoDB.Bson;
 
 namespace b1
 {
-    /// <summary>
-    /// It's basically an interceptor on a specific action, could just enable
-    /// logging on a global level using UseHttpLogging() (or something like that)
-    /// but I wanted a more granular one, and it sits in a different level, it wraps the action.
-    /// The builder.services.AddHttpLogging() or whatever is middleware and sit's closer
-    /// to the filters on the outmost boundary of the request/response lifecycle
-    /// </summary>
+    
     public class LoggingEnabledAttribute : ActionFilterAttribute
     {
         public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
@@ -34,6 +28,7 @@ namespace b1
                 var jsonResult = JsonSerializer.Serialize(res.Value);
                 Console.WriteLine($"[RESPONSE BODY]: {jsonResult}");
             }
+            Console.WriteLine("[LOG] Status = " + httpCtx.Response.StatusCode);
         }
     }
 }

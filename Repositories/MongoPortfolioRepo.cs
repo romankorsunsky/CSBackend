@@ -10,7 +10,7 @@ namespace b1.Repositories
         {
             _portfolioCollection = db.GetCollection<Portfolio>("portfolios");
         }
-        public async Task<Portfolio?> GetPortfolioByUsernameAsync(string portfolioId)
+        public async Task<Portfolio?> GetPortfolioByIdAsync(string portfolioId)
         {
             var results = await _portfolioCollection.FindAsync(p => p.Id == portfolioId);
             var portf = await results.FirstOrDefaultAsync();
@@ -22,7 +22,7 @@ namespace b1.Repositories
         /// </summary>
         /// <param name="portfolio"></param>
         /// <returns>returns true on succes, false on failure to persist</returns>
-        public async Task<bool> PersistPortfolio(Portfolio portfolio)
+        public async Task<bool> AddPortfolioAsync(Portfolio portfolio)
         {
             try
             {
@@ -35,7 +35,7 @@ namespace b1.Repositories
                 return false;
             }
         }
-        public async Task<List<Portfolio>> GetPortfoliosAsync(string userId)
+        public async Task<List<Portfolio>> GetPortfoliosForUserAsync(string userId)
         {
             return await _portfolioCollection.Find(p => p.OwnerId == userId).ToListAsync();
         }

@@ -18,7 +18,7 @@ namespace b1.Repositories
             await _userCol.InsertOneAsync(user);
         }
 
-        public async Task<User?> GetUserByName(string name)
+        public async Task<User?> GetUserByUsername(string name)
         {
             var result = await _userCol.Find(u => u.Username == name).FirstOrDefaultAsync();
             return result;
@@ -37,6 +37,16 @@ namespace b1.Repositories
         {
             var res = await _userCol.Find(user => user.Id == userId).FirstOrDefaultAsync();
             return res;
+        }
+
+        public async Task UpdateUserBalance(string userId, double newBalance)
+        {
+            var update = Builders<User>.Update.Set(usr => usr.Balance, newBalance);
+            var res = await _userCol.UpdateOneAsync(usr => usr.Id == userId, update);
+            if (res.ModifiedCount != 1)
+            {
+                throw new Exception("Couldn't modify balance for User with id:" + userId);
+            }
         }
     }
 }

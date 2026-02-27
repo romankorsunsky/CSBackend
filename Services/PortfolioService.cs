@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Security.Claims;
+using b1.DTOs;
 using b1.Main;
 using b1.Models;
 using b1.Repositories;
@@ -23,13 +24,13 @@ namespace b1.Services
         /// <summary>
         /// Returns a list of Portfolios for the user.
         /// </summary>
-        /// <param name="userId">Here for some reason I decided</param>
-        /// <returns></returns>
+        /// <param name="principal">ClaimsPrincipal to get user</param>
+        /// <returns>List of PortfolioDTOs</returns>
         public async Task<List<PortfolioDTO>> GetPortfoliosForUserAsync(ClaimsPrincipal principal)
         {
             var userId = principal.FindFirst("sub")?.Value;
             var portfolios = await _portfolios.Find(p => p.OwnerId == userId).ToListAsync();
-
+            Console.WriteLine("[LOG] portfolios: \n" + portfolios.ToJson());
             var portfolioDTOs = new List<PortfolioDTO>(portfolios.Count);
             //select id's
             var portfolioIds = new List<string>();
@@ -43,7 +44,8 @@ namespace b1.Services
             {
                 foreach (var pos in cursor.Current)
                 {
-                    dict[pos.PortfolioId].Add(new PositionDTO(pos));
+                    if(pos.Closed == false)
+                        dict[pos.PortfolioId].Add(new PositionDTO(pos));
                 }
             }
             //for each Portfolio and the corresponding group of positions, generate a portfolioDTO to send back.

@@ -15,8 +15,8 @@ namespace b1.Controllers
     public class StockController : AssetBaseController
     {
         protected override string AssetTypeName { get => "stock"; }
-        public StockController(IMongoDatabase dbInstance, PriceContext ctx,AssetService assetService):
-            base(dbInstance,ctx,assetService)
+        public StockController(PriceContext ctx,AssetService assetService):
+            base(ctx,assetService)
         {
            
         }

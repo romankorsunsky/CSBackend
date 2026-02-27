@@ -1,4 +1,4 @@
-namespace b1.Main
+namespace b1.Infrastructure
 {
     public interface IMessageChannel
     {
